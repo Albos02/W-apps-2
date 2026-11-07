@@ -1,0 +1,75 @@
+# Live Weather Data Application
+
+A modern, responsive web application for displaying real-time weather measurements from MeteoSwiss stations. The app provides interactive visualizations, customizable metric groups, and a clean user interface with dark/light theme support.
+
+## Features
+
+- **Real-time Weather Data**: Fetches current and historical measurements from MeteoSwiss OGD SMN API
+- **Multiple Metric Groups**: Toggle between different measurement categories (wind, temperature, pressure, humidity, precipitation, sunshine, radiation)
+- **Interactive Charts**: Line charts with multi-metric support including dual Y-axes for directional data
+- **Data Tables**: Clickable table rows highlight corresponding chart positions
+- **Customizable UI**: Drag-and-drop metric cards, searchable station selection, favorites system
+- **Responsive Design**: Adapts to mobile and desktop screens with touch-friendly controls
+- **Theme Support**: Light/dark mode with persistent preference storage
+
+## Architecture
+
+### Data Layer (`data-retrieval.js`)
+- Loads cached station list from JSON file
+- Fetches current values via `/ogd-smn_<lower>_t_now.csv` endpoints
+- Fetches time-series history via `/ogd-smn_<lower>_t_recent.csv` endpoints
+- 10-minute cache for current data, shared cache for time-series to prevent hiding errors
+- Parses CSV responses handling timestamp formats and optional parameters
+
+### Chart Utilities (`chart-utils.js`)
+- Charts.js integration with custom vertical line plugin
+- Aggregation functions for different time periods (3h, day, week, month, year)
+- Automatic interval grouping (hourly/6h/daily based on timeframe)
+- Circular mean calculation for wind direction data
+- Timestamp parsing and localization for x-axis labels
+- Table population with clickable row highlighting
+
+### UI Manager (`ui-manager.js`)
+- Theme toggle with localStorage persistence
+- Metric group selection via spotlight cards
+- Navigation handlers (brand link, archive/about buttons)
+- Keyboard accessibility for metric switching
+
+### Styles (`style.css`, `globals.css`)
+- CSS custom properties for theming
+- Spotlight hover effects on metric cards
+- Custom scrollbars and context menus
+- Responsive breakpoints at 1100px and 380px
+
+## Metric Groups
+
+| Group | Metrics | Colors |
+|-------|---------|--------|
+| Wind | Average, Gusts, Direction | Orange, Red, Grey (dual Y-axis) |
+| Pressure | QFE, QFF, QNH | Green, Blue, Teal (dual Y-axis) |
+| Temperature | Temperature | Red |
+| Dewpoint | Dew Point | Green |
+| Humidity | Relative Humidity | Cyan |
+| Precipitation | Rainfall | Dark blue (sum aggregation) |
+| Radiation | Global Radiation | Brown (avg) |
+
+## API Endpoints
+
+- Station list: `../assets/coord_station_meteosuisse.json`
+- Current values: `{base}/{station}/ogd-smn_{station}_t_now.csv`
+- Time series: `{base}/{station}/ogd-smn_{station}_t_recent.csv`
+
+## Cache Strategy
+
+- Current data: 10-minute TTL keyed by station code
+- Time-series: Shared cache to avoid hiding transient failures behind stale errors
+- Cache cleared via `clearCache()` function for manual refresh
+
+## Dependencies
+
+- Chart.js (via CDN)
+- Meyer reset CSS
+
+## Usage
+
+Open the HTML file in a modern browser. The app automatically detects available metric cards and populates them based on data availability at selected stations.
