@@ -244,3 +244,6 @@
 @media(min-width:701px){.dashboard-grid{grid-template-columns:minmax(0,1fr) minmax(210px,max-content)}.readings-card .readings-heading{flex-direction:column;gap:8px}.readings-card th:first-child,.readings-card td:first-child{width:125px}}
 .chart-wrap{height:250px}
 @media(max-width:700px){.chart-wrap{height:230px}}
+.readings-card .table-scroll{max-height:340px;overscroll-behavior-y:auto}
+@media(max-width:700px){.readings-card .table-scroll{max-height:310px}}
+.dashboard-grid{margin-bottom:12px}
