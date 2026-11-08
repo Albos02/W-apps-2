@@ -189,7 +189,7 @@ test("app renders an added config metric, selects it, and uses shared formatting
     .querySelector('[data-group="visibility"]');
   assert.ok(tile);
   assert.equal(tile.hidden, false);
-  assert.equal(tile.querySelector("strong").textContent, "13 km");
+  assert.equal(tile.querySelector("strong").textContent, "12.6 km");
   assert.equal(
     tile.querySelector(".condition-trend").classList.contains("unavailable"),
     true,
@@ -197,7 +197,7 @@ test("app renders an added config metric, selects it, and uses shared formatting
   tile.querySelector("strong").click();
   assert.equal(f.state.group, "visibility");
   assert.equal(tile.getAttribute("aria-pressed"), "true");
-  assert.equal(f.el("chart-current-value").textContent, "13 km");
+  assert.equal(f.el("chart-current-value").textContent, "12.6 km");
   assert.equal(f.el("history").scrolled.block, "start");
 
   const pressure = f.groups.find((group) => group.id === "pressure");
@@ -210,7 +210,7 @@ test("app renders an added config metric, selects it, and uses shared formatting
     formatNumber(pressure.fields[0], 1023.6),
   );
   assert.equal(f.el("current-pressure").textContent, "1024 hPa");
-  assert.equal(f.el("wind-gust").textContent, "Gusts 22 km/h");
+  assert.equal(f.el("wind-gust").textContent, "Gusts 21.8 km/h");
 
   f.state.current = null;
   app.render();

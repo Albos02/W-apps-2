@@ -11,9 +11,9 @@ export function esc(value) {
 
 export function formatNumber(field, value) {
   if (!Number.isFinite(value)) return "—";
-  return value.toFixed(
-    Math.abs(value) < 10 && field.key !== "direction" ? 1 : 0,
-  );
+  const digits =
+    field.key.startsWith("pressure") || field.key === "direction" ? 0 : 1;
+  return value.toFixed(digits);
 }
 
 export function formatValue(field, value) {
