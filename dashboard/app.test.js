@@ -9,7 +9,7 @@ function app(fetch) {
   const source = fs.readFileSync(`${__dirname}/app.js`, 'utf8').replace('  init();', `
     renderCurrent = () => {};
     renderChart = () => {};
-    globalThis.testApp = { parseCSV, loadStationData, state, stations };
+    globalThis.testApp = { parseCSV, parseDate, loadStationData, metricTrendForField, state, stations };
   `);
   vm.runInNewContext(source, context);
   return { ...context.testApp, status };
@@ -47,4 +47,13 @@ test('ignores stale station responses and uses the official endpoint', async () 
   assert.equal(state.current.temp, 4.5);
   assert.equal(state.current.humidity, undefined);
   assert.equal(status.textContent, 'Live data');
+});
+
+test('calculates wind direction trends across north using the shorter turn', () => {
+  const { metricTrendForField, parseDate, state } = app();
+  const baseline = parseDate('202611081000');
+  state.history = [{ date: baseline, values: { direction: 350 } }];
+  state.current = { timestamp: parseDate('202611081100'), direction: 10 };
+
+  assert.equal(metricTrendForField({ key: 'direction', unit: '°' }).text, '↻ +20° · 1h');
 });

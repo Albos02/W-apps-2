@@ -184,6 +184,9 @@
 .primary-trend{margin-top:5px;color:var(--metric-accent);font:9px var(--mono);white-space:nowrap}
 .primary-value-group{--metric-accent:#d98764}
 .wind-icon{display:inline-block;transform-origin:center;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.condition-grid .condition-item .wind-speed-icon svg{width:21px;height:21px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.condition-grid .condition-item .condition-icon{display:grid;width:30px;height:30px;place-items:center;justify-self:center;align-self:center;box-sizing:border-box;line-height:1}
+.condition-grid .condition-item .wind-icon{transform-origin:50% 50%}
 .favorite-station{cursor:grab;user-select:none;-webkit-user-select:none}
 .favorite-station:active{cursor:grabbing}
 .favorite-station.dragging{opacity:.45;transform:scale(.97)}

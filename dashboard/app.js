@@ -121,18 +121,24 @@
 
   function renderConditionMetrics() {
     const grid = el('condition-grid');
-    const items = new Map([...grid.querySelectorAll('.condition-item[data-group]')].map((item) => [item.dataset.group, item]));
+    const items = new Map();
+    grid.querySelectorAll('.condition-item[data-group]').forEach((item) => {
+      const groupItems = items.get(item.dataset.group) || [];
+      groupItems.push(item);
+      items.set(item.dataset.group, groupItems);
+    });
     const primary = metricGroups.find((group) => !state.hiddenGroups.has(group.id)) || metricGroups[0];
     const primarySelect = document.querySelector('.primary-metric-select');
     primarySelect.dataset.group = primary.id;
     primarySelect.style.setProperty('--metric-accent', primary.color);
     primarySelect.setAttribute('aria-label', `Show ${primary.name.toLowerCase()} history`);
     metricGroups.forEach((group) => {
-      const item = items.get(group.id);
-      if (!item) return;
-      item.hidden = state.hiddenGroups.has(group.id) || group.id === primary.id;
-      item.style.setProperty('--metric-accent', group.color);
-      grid.appendChild(item);
+      const groupItems = items.get(group.id) || [];
+      groupItems.forEach((item) => {
+        item.hidden = state.hiddenGroups.has(group.id) || group.id === primary.id;
+        item.style.setProperty('--metric-accent', group.color);
+        grid.appendChild(item);
+      });
     });
     updateMetricSelection();
   }
@@ -327,16 +333,16 @@
     el('primary-trend').style.setProperty('--metric-accent', primaryGroup.color);
     el('current-temperature-tile').innerHTML = Number.isFinite(current?.temp) ? `${current.temp.toFixed(1)}<small> °</small>` : '—<small> °</small>';
     el('current-wind').innerHTML = Number.isFinite(current?.wind) ? `${current.wind.toFixed(1)} <small>km/h</small>` : '—<small> km/h</small>';
+    el('wind-gust').textContent = Number.isFinite(current?.gust) ? `Gusts ${current.gust.toFixed(1)} km/h` : 'Gusts unavailable';
     el('current-humidity').innerHTML = Number.isFinite(current?.humidity) ? `${Math.round(current.humidity)}<small>%</small>` : '—<small>%</small>';
     el('current-rain').innerHTML = Number.isFinite(current?.rain) ? `${current.rain.toFixed(1)}<small> mm</small>` : '—<small> mm</small>';
     el('current-pressure').innerHTML = Number.isFinite(current?.pressure) ? `${Math.round(current.pressure)}<small> hPa</small>` : '—<small> hPa</small>';
     el('current-dewpoint').innerHTML = Number.isFinite(current?.dewpoint) ? `${current.dewpoint.toFixed(1)}<small> °C</small>` : '—<small> °C</small>';
     el('current-sunshine').innerHTML = Number.isFinite(current?.sunshine) ? `${Math.round(current.sunshine)}<small> min</small>` : '—<small> min</small>';
     el('current-radiation').innerHTML = Number.isFinite(current?.radiation) ? `${Math.round(current.radiation)}<small> W/m²</small>` : '—<small> W/m²</small>';
-    const direction = Number.isFinite(current?.direction) ? directionText(current.direction) : 'Direction unavailable';
-    const gust = Number.isFinite(current?.gust) ? ` · gust ${current.gust.toFixed(1)} km/h` : '';
-    el('wind-direction').textContent = `${direction}${gust}`;
-    el('wind-arrow').style.transform = Number.isFinite(current?.direction) ? `rotate(${current.direction}deg)` : 'rotate(0deg)';
+    el('wind-direction-value').textContent = Number.isFinite(current?.direction) ? `${Math.round(current.direction)}°` : '—';
+    el('wind-direction-point').textContent = Number.isFinite(current?.direction) ? directionText(current.direction) : 'Direction unavailable';
+    el('wind-arrow').style.transform = Number.isFinite(current?.direction) ? `rotate(${current.direction + 180}deg)` : 'rotate(180deg)';
     metricGroups.forEach((group) => {
       const trend = metricTrend(group);
       const trendElement = el(`trend-${group.id}`);
@@ -344,6 +350,11 @@
       trendElement.classList.toggle('unavailable', !trend);
       trendElement.style.setProperty('--metric-accent', group.color);
     });
+    const directionTrend = metricTrendForField({ key: 'direction', unit: '°' });
+    const directionTrendElement = el('trend-wind-direction');
+    directionTrendElement.textContent = directionTrend?.text || '';
+    directionTrendElement.classList.toggle('unavailable', !directionTrend);
+    directionTrendElement.style.setProperty('--metric-accent', metricGroups.find((group) => group.id === 'wind').color);
     el('local-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     el('last-reading').textContent = current?.timestamp ? new Date(current.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No current reading';
     el('favorite-toggle').classList.toggle('is-favorite', state.favorites.includes(station.code));
@@ -355,7 +366,10 @@
   }
   function directionText(degrees) { return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(Number(degrees) / 45) % 8]; }
   function metricTrend(group) {
-    const key = group.fields[0].key;
+    return metricTrendForField(group.fields[0]);
+  }
+  function metricTrendForField(field) {
+    const key = field.key;
     const points = (state.history || []).filter((point) => point.date instanceof Date && Number.isFinite(point.values?.[key]));
     if (state.current?.timestamp instanceof Date && Number.isFinite(state.current[key])) {
       points.push({ date: state.current.timestamp, values: state.current });
@@ -373,12 +387,14 @@
     let delta;
     if (key === 'rain' || key === 'sunshine') {
       delta = ordered.reduce((sum, point) => point.date > baseline.date && point.date <= latest.date ? sum + point.values[key] : sum, 0);
+    } else if (key === 'direction') {
+      delta = (latest.values[key] - baseline.values[key] + 540) % 360 - 180;
     } else {
       delta = latest.values[key] - baseline.values[key];
     }
     if (!Number.isFinite(delta)) return null;
-    const arrow = delta > 0 ? '↗' : delta < 0 ? '↘' : '→';
-    const value = `${delta > 0 ? '+' : ''}${delta.toFixed(Math.abs(delta) < 10 ? 1 : 0)}${group.fields[0].unit.trim()}`;
+    const arrow = key === 'direction' ? (delta > 0 ? '↻' : delta < 0 ? '↺' : '→') : (delta > 0 ? '↗' : delta < 0 ? '↘' : '→');
+    const value = `${delta > 0 ? '+' : ''}${delta.toFixed(Math.abs(delta) < 10 ? 1 : 0)}${field.unit.trim()}`;
     return { arrow, text: `${arrow} ${value} · 1h`, direction: Math.sign(delta) };
   }
 
