@@ -1,0 +1,13 @@
+{
+  "name": "w-apps",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test dashboard/*.test.js",
+    "format": "prettier --write dashboard package.json",
+    "format:check": "prettier --check dashboard package.json"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}

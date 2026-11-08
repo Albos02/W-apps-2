@@ -4,30 +4,57 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f8f8f8" />
-    <meta name="description" content="Live weather observations from MeteoSwiss stations across Switzerland." />
+    <meta
+      name="description"
+      content="Live weather observations from MeteoSwiss stations across Switzerland."
+    />
     <title>W-Apps — Swiss weather, right now</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
         <a class="brand" href="#top" aria-label="W-Apps home">
-          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="brand-mark" aria-hidden="true"
+            ><i></i><i></i><i></i
+          ></span>
           <span>W-Apps</span>
         </a>
         <nav class="top-nav" aria-label="Main navigation">
           <a class="nav-link active" href="#overview">Overview</a>
-          <a class="nav-link" href="#history">Archive <span class="nav-arrow">↗</span></a>
+          <a class="nav-link" href="#history"
+            >Archive <span class="nav-arrow">↗</span></a
+          >
           <a class="nav-link" href="#about">About</a>
         </nav>
         <div class="top-actions">
-          <span class="live-status"><span class="live-dot"></span><span id="feed-status">Connecting</span></span>
-          <button class="icon-button theme-toggle" id="theme-toggle" aria-label="Switch to dark theme" title="Toggle theme">
-            <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
-            <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.1 15.4A8.5 8.5 0 0 1 8.6 3.9 8.6 8.6 0 1 0 20.1 15.4Z"/></svg>
+          <span class="live-status"
+            ><span class="live-dot"></span
+            ><span id="feed-status">Connecting</span></span
+          >
+          <button
+            class="icon-button theme-toggle"
+            id="theme-toggle"
+            aria-label="Switch to dark theme"
+            title="Toggle theme"
+          >
+            <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.5" />
+              <path
+                d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
+              />
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M20.1 15.4A8.5 8.5 0 0 1 8.6 3.9 8.6 8.6 0 1 0 20.1 15.4Z"
+              />
+            </svg>
           </button>
         </div>
       </header>
@@ -35,82 +62,457 @@
       <main id="top">
         <section class="intro" id="overview">
           <div class="intro-copy">
-            <p class="eyebrow"><span class="eyebrow-line"></span> SWITZERLAND · LIVE OBSERVATIONS</p>
-            <h1>Weather, <span>without<br class="desktop-break" /> the guesswork.</span></h1>
-            <p class="intro-description">A closer look at what's happening outside, measured<br class="desktop-break" /> across Switzerland every ten minutes.</p>
+            <p class="eyebrow">
+              <span class="eyebrow-line"></span> SWITZERLAND · LIVE OBSERVATIONS
+            </p>
+            <h1>
+              Weather,
+              <span
+                >without<br class="desktop-break" />
+                the guesswork.</span
+              >
+            </h1>
+            <p class="intro-description">
+              A closer look at what's happening outside, measured<br
+                class="desktop-break"
+              />
+              across Switzerland every ten minutes.
+            </p>
           </div>
           <div class="station-picker-wrap">
-            <label class="field-label" for="station-search">WEATHER STATION</label>
+            <label class="field-label" for="station-search"
+              >WEATHER STATION</label
+            >
             <div class="station-picker" id="station-picker">
-              <svg class="pin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-              <input id="station-search" type="search" value="Bouveret" autocomplete="off" placeholder="Search a station..." aria-label="Search weather stations" />
-              <button class="picker-chevron" id="picker-toggle" aria-label="Show stations"><svg viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5"/></svg></button>
-              <div class="station-menu" id="station-menu" role="listbox" aria-label="Weather stations"></div>
+              <svg class="pin-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+                <circle cx="12" cy="10" r="2.5" />
+              </svg>
+              <input
+                id="station-search"
+                type="search"
+                value="Bouveret"
+                autocomplete="off"
+                placeholder="Search a station..."
+                aria-label="Search weather stations"
+                aria-controls="station-menu"
+                aria-expanded="false"
+                aria-haspopup="listbox"
+              />
+              <button
+                class="picker-chevron"
+                id="picker-toggle"
+                aria-label="Show stations"
+                aria-controls="station-menu"
+                aria-expanded="false"
+              >
+                <svg viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg>
+              </button>
+              <div
+                class="station-menu"
+                id="station-menu"
+                role="listbox"
+                aria-label="Weather stations"
+              ></div>
             </div>
-            <div class="station-meta"><span class="station-coordinates" id="station-coordinates">46.51° N &nbsp; 6.67° E</span><button class="favorite-button" id="favorite-toggle" aria-pressed="false"><span class="star">☆</span> <span id="favorite-label">Add to favorites</span></button></div>
-            <div class="favorite-stations" id="favorite-stations" role="group" aria-label="Favorite stations"></div>
+            <div class="station-meta">
+              <span class="station-coordinates" id="station-coordinates"
+                >46.51° N &nbsp; 6.67° E</span
+              ><button
+                class="favorite-button"
+                id="favorite-toggle"
+                aria-pressed="false"
+              >
+                <span class="star">☆</span>
+                <span id="favorite-label">Add to favorites</span>
+              </button>
+            </div>
+            <div
+              class="favorite-stations"
+              id="favorite-stations"
+              role="group"
+              aria-label="Favorite stations"
+            ></div>
           </div>
         </section>
 
-        <section class="current-card" id="current-card" aria-label="Current conditions. Select a measurement to explore its history.">
-            <div class="current-main">
-              <div class="current-heading">
-                <div><p class="eyebrow small-eyebrow">CURRENT CONDITIONS <span class="update-dot"></span></p><h2 id="current-station">Bouveret</h2></div>
-                <div class="current-heading-actions"><button class="customize-button" id="customize-metrics" type="button" aria-haspopup="dialog" aria-controls="metric-customizer">Customize</button></div>
+        <section
+          class="current-card"
+          id="current-card"
+          aria-label="Current conditions. Select a measurement to explore its history."
+        >
+          <div class="current-main">
+            <div class="current-heading">
+              <div>
+                <p class="eyebrow small-eyebrow">
+                  CURRENT CONDITIONS <span class="update-dot"></span>
+                </p>
+                <h2 id="current-station">Bouveret</h2>
               </div>
-              <div class="weather-summary metric-select primary-metric-select" id="primary-metric-select" data-group="temperature" role="button" tabindex="0" aria-label="Show temperature history" aria-pressed="false">
-                <span class="primary-value-group"><span class="primary-metric-label" id="primary-metric-label">Temperature</span><span class="temperature-lockup" aria-hidden="true"><span class="temperature-value" id="current-temperature">—</span><span class="temperature-unit" id="primary-unit">°</span></span></span>
-                <div class="weather-details"><span class="weather-icon" id="weather-icon" aria-hidden="true">☼</span><span id="weather-description">Air temperature</span><span class="primary-trend" id="primary-trend"></span></div>
+              <div class="current-heading-actions">
+                <button
+                  class="customize-button"
+                  id="customize-metrics"
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-controls="metric-customizer"
+                >
+                  Customize
+                </button>
               </div>
-              <div class="current-footer"><span><span class="footer-marker"></span> Elevation <strong id="station-elevation">456 m</strong></span><span class="footer-divider"></span><span>Last reading <strong id="last-reading">—</strong></span></div>
             </div>
-            <div class="condition-grid" id="condition-grid">
-              <button class="condition-item metric-select" type="button" data-group="temperature" aria-label="Show temperature history" aria-pressed="false"><span class="condition-icon temperature-icon">☼</span><span class="condition-label">Temperature</span><strong id="current-temperature-tile">—<small> °</small></strong><span class="condition-meta"><span class="condition-note">Air temperature</span><span class="condition-trend" id="trend-temperature"></span></span></button>
-              <button class="condition-item metric-select" type="button" data-group="wind" aria-label="Show wind history" aria-pressed="false"><span class="condition-icon wind-speed-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h12a2.5 2.5 0 1 0-2.5-2.5M2 12h17a2.5 2.5 0 1 1-2.5 2.5M4 16h7a2.5 2.5 0 1 0-2.5-2.5"/></svg></span><span class="condition-label">Wind speed</span><strong id="current-wind">—<small> km/h</small></strong><span class="condition-meta"><span class="condition-note" id="wind-gust">Gusts unavailable</span><span class="condition-trend" id="trend-wind"></span></span></button>
-              <button class="condition-item metric-select" type="button" data-group="wind" data-keep-when-primary="true" aria-label="Show wind history" aria-pressed="false"><span class="condition-icon wind-icon" id="wind-arrow">↑</span><span class="condition-label">Wind direction</span><strong id="wind-direction-value">—</strong><span class="condition-meta"><span class="condition-note" id="wind-direction-point">Direction unavailable</span><span class="condition-trend" id="trend-wind-direction"></span></span></button>
-              <button class="condition-item metric-select" type="button" data-group="humidity" aria-label="Show humidity history" aria-pressed="false"><span class="condition-icon humidity-icon">％</span><span class="condition-label">Humidity</span><strong id="current-humidity">—<small>%</small></strong><span class="condition-meta"><span class="condition-note">Relative humidity</span><span class="condition-trend" id="trend-humidity"></span></span></button>
-              <button class="condition-item metric-select" type="button" data-group="precipitation" aria-label="Show precipitation history" aria-pressed="false"><span class="condition-icon rain-icon">◒</span><span class="condition-label">Precipitation</span><strong id="current-rain">—<small> mm</small></strong><span class="condition-meta"><span class="condition-note">Last 10 minutes</span><span class="condition-trend" id="trend-precipitation"></span></span></button>
-              <button class="condition-item metric-select" type="button" data-group="pressure" aria-label="Show pressure history" aria-pressed="false"><span class="condition-icon pressure-icon">⌁</span><span class="condition-label">Pressure</span><strong id="current-pressure">—<small> hPa</small></strong><span class="condition-meta"><span class="condition-note">At sea level</span><span class="condition-trend" id="trend-pressure"></span></span></button>
-              <button class="condition-item metric-select" type="button" data-group="dewpoint" aria-label="Show dew point history" aria-pressed="false"><span class="condition-icon dewpoint-icon">◌</span><span class="condition-label">Dew point</span><strong id="current-dewpoint">—<small> °C</small></strong><span class="condition-meta"><span class="condition-note">Moisture in the air</span><span class="condition-trend" id="trend-dewpoint"></span></span></button>
-              <button class="condition-item metric-select" type="button" data-group="sunshine" aria-label="Show sunshine history" aria-pressed="false"><span class="condition-icon sunshine-icon">◷</span><span class="condition-label">Sunshine</span><strong id="current-sunshine">—<small> min</small></strong><span class="condition-meta"><span class="condition-note">Duration</span><span class="condition-trend" id="trend-sunshine"></span></span></button>
-              <button class="condition-item metric-select" type="button" data-group="radiation" aria-label="Show radiation history" aria-pressed="false"><span class="condition-icon radiation-icon">✳</span><span class="condition-label">Radiation</span><strong id="current-radiation">—<small> W/m²</small></strong><span class="condition-meta"><span class="condition-note">Global</span><span class="condition-trend" id="trend-radiation"></span></span></button>
+            <div
+              class="weather-summary metric-select primary-metric-select"
+              id="primary-metric-select"
+              data-group="temperature"
+              role="button"
+              tabindex="0"
+              aria-label="Show temperature history"
+              aria-pressed="false"
+            >
+              <span class="primary-value-group"
+                ><span class="primary-metric-label" id="primary-metric-label"
+                  >Temperature</span
+                ><span class="temperature-lockup" aria-hidden="true"
+                  ><span class="temperature-value" id="current-temperature"
+                    >—</span
+                  ><span class="temperature-unit" id="primary-unit"
+                    >°</span
+                  ></span
+                ></span
+              >
+              <div class="weather-details">
+                <span class="weather-icon" id="weather-icon" aria-hidden="true"
+                  >☼</span
+                ><span id="weather-description">Air temperature</span
+                ><span class="primary-trend" id="primary-trend"></span>
+              </div>
             </div>
-          </section>
+            <div class="current-footer">
+              <span
+                ><span class="footer-marker"></span> Elevation
+                <strong id="station-elevation">456 m</strong></span
+              ><span class="footer-divider"></span
+              ><span>Last reading <strong id="last-reading">—</strong></span>
+            </div>
+          </div>
+          <div class="condition-grid" id="condition-grid">
+            <button
+              class="condition-item metric-select"
+              type="button"
+              data-group="temperature"
+              aria-label="Show temperature history"
+              aria-pressed="false"
+            >
+              <span class="condition-icon temperature-icon">☼</span
+              ><span class="condition-label">Temperature</span
+              ><strong id="current-temperature-tile">—<small> °</small></strong
+              ><span class="condition-meta"
+                ><span class="condition-note">Air temperature</span
+                ><span class="condition-trend" id="trend-temperature"></span
+              ></span>
+            </button>
+            <button
+              class="condition-item metric-select"
+              type="button"
+              data-group="wind"
+              aria-label="Show wind history"
+              aria-pressed="false"
+            >
+              <span class="condition-icon wind-speed-icon"
+                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M3 8h12a2.5 2.5 0 1 0-2.5-2.5M2 12h17a2.5 2.5 0 1 1-2.5 2.5M4 16h7a2.5 2.5 0 1 0-2.5-2.5"
+                  /></svg></span
+              ><span class="condition-label">Wind speed</span
+              ><strong id="current-wind">—<small> km/h</small></strong
+              ><span class="condition-meta"
+                ><span class="condition-note" id="wind-gust"
+                  >Gusts unavailable</span
+                ><span class="condition-trend" id="trend-wind"></span
+              ></span>
+            </button>
+            <button
+              class="condition-item metric-select"
+              type="button"
+              data-group="wind"
+              data-keep-when-primary="true"
+              aria-label="Show wind history"
+              aria-pressed="false"
+            >
+              <span class="condition-icon wind-icon" id="wind-arrow">↑</span
+              ><span class="condition-label">Wind direction</span
+              ><strong id="wind-direction-value">—</strong
+              ><span class="condition-meta"
+                ><span class="condition-note" id="wind-direction-point"
+                  >Direction unavailable</span
+                ><span class="condition-trend" id="trend-wind-direction"></span
+              ></span>
+            </button>
+            <button
+              class="condition-item metric-select"
+              type="button"
+              data-group="humidity"
+              aria-label="Show humidity history"
+              aria-pressed="false"
+            >
+              <span class="condition-icon humidity-icon">％</span
+              ><span class="condition-label">Humidity</span
+              ><strong id="current-humidity">—<small>%</small></strong
+              ><span class="condition-meta"
+                ><span class="condition-note">Relative humidity</span
+                ><span class="condition-trend" id="trend-humidity"></span
+              ></span>
+            </button>
+            <button
+              class="condition-item metric-select"
+              type="button"
+              data-group="precipitation"
+              aria-label="Show precipitation history"
+              aria-pressed="false"
+            >
+              <span class="condition-icon rain-icon">◒</span
+              ><span class="condition-label">Precipitation</span
+              ><strong id="current-rain">—<small> mm</small></strong
+              ><span class="condition-meta"
+                ><span class="condition-note">Last 10 minutes</span
+                ><span class="condition-trend" id="trend-precipitation"></span
+              ></span>
+            </button>
+            <button
+              class="condition-item metric-select"
+              type="button"
+              data-group="pressure"
+              aria-label="Show pressure history"
+              aria-pressed="false"
+            >
+              <span class="condition-icon pressure-icon">⌁</span
+              ><span class="condition-label">Pressure</span
+              ><strong id="current-pressure">—<small> hPa</small></strong
+              ><span class="condition-meta"
+                ><span class="condition-note">At sea level</span
+                ><span class="condition-trend" id="trend-pressure"></span
+              ></span>
+            </button>
+            <button
+              class="condition-item metric-select"
+              type="button"
+              data-group="dewpoint"
+              aria-label="Show dew point history"
+              aria-pressed="false"
+            >
+              <span class="condition-icon dewpoint-icon">◌</span
+              ><span class="condition-label">Dew point</span
+              ><strong id="current-dewpoint">—<small> °C</small></strong
+              ><span class="condition-meta"
+                ><span class="condition-note">Moisture in the air</span
+                ><span class="condition-trend" id="trend-dewpoint"></span
+              ></span>
+            </button>
+            <button
+              class="condition-item metric-select"
+              type="button"
+              data-group="sunshine"
+              aria-label="Show sunshine history"
+              aria-pressed="false"
+            >
+              <span class="condition-icon sunshine-icon">◷</span
+              ><span class="condition-label">Sunshine</span
+              ><strong id="current-sunshine">—<small> min</small></strong
+              ><span class="condition-meta"
+                ><span class="condition-note">Duration</span
+                ><span class="condition-trend" id="trend-sunshine"></span
+              ></span>
+            </button>
+            <button
+              class="condition-item metric-select"
+              type="button"
+              data-group="radiation"
+              aria-label="Show radiation history"
+              aria-pressed="false"
+            >
+              <span class="condition-icon radiation-icon">✳</span
+              ><span class="condition-label">Radiation</span
+              ><strong id="current-radiation">—<small> W/m²</small></strong
+              ><span class="condition-meta"
+                ><span class="condition-note">Global</span
+                ><span class="condition-trend" id="trend-radiation"></span
+              ></span>
+            </button>
+          </div>
+        </section>
 
         <section class="observations-section" id="history">
           <div class="section-heading">
-            <div><p class="eyebrow section-kicker">THE LAST 24 HOURS</p><h2>Station observations<span class="heading-period">.</span></h2></div>
+            <div>
+              <p class="eyebrow section-kicker">THE LAST 24 HOURS</p>
+              <h2>Station observations<span class="heading-period">.</span></h2>
+            </div>
             <div class="observation-tools">
-              <div class="refresh-control"><span class="observation-time" id="observation-time">No observation time available</span><button class="refresh-button no-reading" id="refresh-data" type="button" aria-label="Refresh weather data; no observation is available" title="Refresh weather data"><span class="refresh-icon" aria-hidden="true">↻</span><span id="refresh-label">Refresh</span></button></div>
-              <div class="range-tabs" role="group" aria-label="Chart time range">
-                <button class="range-tab" data-range="3h" aria-label="Last 3 hours" aria-pressed="false">3h</button><button class="range-tab" data-range="6h" aria-label="Last 6 hours" aria-pressed="false">6h</button><button class="range-tab" data-range="12h" aria-label="Last 12 hours" aria-pressed="false">12h</button><button class="range-tab active" data-range="24h" aria-label="Last 24 hours" aria-pressed="true">24h</button><button class="range-tab" data-range="7d" aria-label="Last 7 days" aria-pressed="false">7d</button><button class="range-tab" data-range="30d" aria-label="Last 30 days" aria-pressed="false">30d</button>
+              <div class="refresh-control">
+                <span class="observation-time" id="observation-time"
+                  >No observation time available</span
+                ><button
+                  class="refresh-button no-reading"
+                  id="refresh-data"
+                  type="button"
+                  aria-label="Refresh weather data; no observation is available"
+                  title="Refresh weather data"
+                >
+                  <span class="refresh-icon" aria-hidden="true">↻</span
+                  ><span id="refresh-label">Refresh</span>
+                </button>
+              </div>
+              <div
+                class="range-tabs"
+                role="group"
+                aria-label="Chart time range"
+              >
+                <button
+                  class="range-tab"
+                  data-range="3h"
+                  aria-label="Last 3 hours"
+                  aria-pressed="false"
+                >
+                  3h</button
+                ><button
+                  class="range-tab"
+                  data-range="6h"
+                  aria-label="Last 6 hours"
+                  aria-pressed="false"
+                >
+                  6h</button
+                ><button
+                  class="range-tab"
+                  data-range="12h"
+                  aria-label="Last 12 hours"
+                  aria-pressed="false"
+                >
+                  12h</button
+                ><button
+                  class="range-tab active"
+                  data-range="24h"
+                  aria-label="Last 24 hours"
+                  aria-pressed="true"
+                >
+                  24h</button
+                ><button
+                  class="range-tab"
+                  data-range="7d"
+                  aria-label="Last 7 days"
+                  aria-pressed="false"
+                >
+                  7d</button
+                ><button
+                  class="range-tab"
+                  data-range="30d"
+                  aria-label="Last 30 days"
+                  aria-pressed="false"
+                >
+                  30d
+                </button>
               </div>
             </div>
           </div>
           <div class="dashboard-grid">
             <article class="chart-card">
-              <div class="chart-topline"><div><span class="chart-caption" id="chart-caption">TEMPERATURE</span><div class="chart-current"><strong id="chart-current-value">—</strong><span class="chart-change" id="chart-change"></span></div></div></div>
+              <div class="chart-topline">
+                <div>
+                  <span class="chart-caption" id="chart-caption"
+                    >TEMPERATURE</span
+                  >
+                  <div class="chart-current">
+                    <strong id="chart-current-value">—</strong
+                    ><span class="chart-change" id="chart-change"></span>
+                  </div>
+                </div>
+              </div>
               <div class="chart-legend" id="chart-legend"></div>
-              <div class="chart-wrap" id="chart-wrap"><svg class="weather-chart" id="weather-chart" role="img" aria-label="Temperature observations over time" preserveAspectRatio="none"></svg><p class="chart-empty" id="chart-empty">Waiting for live observations</p><div class="chart-tooltip" id="chart-tooltip"></div></div>
+              <div class="chart-wrap" id="chart-wrap">
+                <svg
+                  class="weather-chart"
+                  id="weather-chart"
+                  role="img"
+                  aria-label="Temperature observations over time"
+                  preserveAspectRatio="none"
+                ></svg>
+                <p class="chart-empty" id="chart-empty">
+                  Waiting for live observations
+                </p>
+                <div class="chart-tooltip" id="chart-tooltip"></div>
+              </div>
               <div class="chart-axis-labels" id="chart-axis-labels"></div>
             </article>
             <section class="readings-section readings-card">
-              <div class="readings-heading"><div><p class="chart-caption">RECENT READINGS</p><h3>Every observation, in detail.</h3></div><button class="download-button" id="download-csv"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v10m0 0 4-4m-4 4L6 8M3 14v3h14v-3"/></svg> Download CSV</button></div>
-              <div class="table-scroll"><table><thead id="readings-head"></thead><tbody id="readings-body"></tbody></table></div>
-              <div class="table-footer"><span id="table-summary">Waiting for live observations</span><span>Source: <strong id="data-source">No data yet</strong></span></div>
+              <div class="readings-heading">
+                <div>
+                  <p class="chart-caption">RECENT READINGS</p>
+                  <h3>Every observation, in detail.</h3>
+                </div>
+                <button class="download-button" id="download-csv">
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M10 2v10m0 0 4-4m-4 4L6 8M3 14v3h14v-3" />
+                  </svg>
+                  Download CSV
+                </button>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead id="readings-head"></thead>
+                  <tbody id="readings-body"></tbody>
+                </table>
+              </div>
+              <div class="table-footer">
+                <span id="table-summary">Waiting for live observations</span
+                ><span
+                  >Source: <strong id="data-source">No data yet</strong></span
+                >
+              </div>
             </section>
           </div>
         </section>
       </main>
-      <footer class="footer" id="about"><a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>W-Apps</span></a><span>Weather data, made a little more human.</span><span class="footer-right">Built with open data <span>✳</span> Switzerland</span></footer>
+      <footer class="footer" id="about">
+        <a class="brand footer-brand" href="#top"
+          ><span class="brand-mark" aria-hidden="true"
+            ><i></i><i></i><i></i></span
+          ><span>W-Apps</span></a
+        ><span>Weather data, made a little more human.</span
+        ><span class="footer-right"
+          >Built with open data <span>✳</span> Switzerland</span
+        >
+      </footer>
     </div>
-    <dialog class="metric-customizer" id="metric-customizer" aria-labelledby="customizer-title">
-      <div class="customizer-heading"><div><p class="chart-caption">PERSONALIZE YOUR DASHBOARD</p><h2 id="customizer-title">Customize metrics</h2></div><button class="customizer-close" id="close-customizer" type="button" aria-label="Close metric customization">×</button></div>
-      <p class="customizer-description">Choose which condition tiles to show and arrange them in your preferred order. The first visible metric becomes the large reading.</p>
+    <dialog
+      class="metric-customizer"
+      id="metric-customizer"
+      aria-labelledby="customizer-title"
+    >
+      <div class="customizer-heading">
+        <div>
+          <p class="chart-caption">PERSONALIZE YOUR DASHBOARD</p>
+          <h2 id="customizer-title">Customize metrics</h2>
+        </div>
+        <button
+          class="customizer-close"
+          id="close-customizer"
+          type="button"
+          aria-label="Close metric customization"
+        >
+          ×
+        </button>
+      </div>
+      <p class="customizer-description">
+        Choose which condition tiles to show and arrange them in your preferred
+        order. The first visible metric becomes the large reading.
+      </p>
       <div class="customizer-options" id="customizer-options"></div>
-      <p class="customizer-hint" id="customizer-hint" aria-live="polite">Drag metrics to reorder them, or use the arrows. The first visible metric becomes the large reading.</p>
+      <p class="customizer-hint" id="customizer-hint" aria-live="polite">
+        Drag metrics to reorder them, or use the arrows. The first visible
+        metric becomes the large reading.
+      </p>
     </dialog>
     <div class="toast" id="app-toast" role="status" aria-live="polite"></div>
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>

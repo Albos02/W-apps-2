@@ -1,76 +1,65 @@
 # Live Weather Data Application
 
-A modern, responsive web application for displaying real-time weather measurements from MeteoSwiss stations. The app provides interactive visualizations, customizable metric groups, and a clean user interface with dark/light theme support.
+A responsive static dashboard for observations from MeteoSwiss stations.
+Serve the repository root over HTTP and open /dashboard/.
 
 ## Features
 
-- **Real-time Weather Data**: Fetches current and historical measurements from MeteoSwiss OGD SMN API
-- **Multiple Metric Groups**: Toggle between different measurement categories (wind, temperature, pressure, humidity, precipitation, sunshine, radiation)
-- **Interactive Charts**: Line charts with multi-metric support including dual Y-axes for directional data
-- **Data Tables**: Clickable table rows highlight corresponding chart positions
-- **Customizable UI**: Drag-and-drop metric cards, searchable station selection, favorites system
-- **Responsive Design**: Adapts to mobile and desktop screens with touch-friendly controls
-- **Theme Support**: Light/dark mode with persistent preference storage
+- Search the bundled Swiss station index, with a built-in fallback.
+- Show current measurements and one-hour trends when a baseline exists.
+- Explore temperature, wind, pressure, dewpoint, humidity, precipitation,
+  sunshine, and radiation using native SVG charts.
+- Link selected chart points to the recent readings table.
+- Export the displayed observations as CSV, including timestamps and source.
+- Customize metric visibility and order; the first visible metric is primary.
+- Save and reorder favorite stations using drag-and-drop or keyboard controls.
+- Persist station, range, theme, favorites, metric order, and visibility locally.
+- Support mobile layouts, light/dark themes, and reduced-motion preferences.
 
 ## Architecture
 
-### Data Retrieval (`dashboard/app.js`)
-- Loads the station list from `../assets/coord_station_meteosuisse.json`, with a built-in fallback
-- Fetches current values via `/ogd-smn_<lower>_t_now.csv` endpoints
-- Fetches recent observations via `/ogd-smn_<lower>_t_recent.csv` endpoints
-- Caches each non-empty successful station/feed response in memory for 10 minutes; manual refresh bypasses the cache
-- Checks for a newer current observation every 30 seconds without reloading the full dashboard
-- Parses CSV responses, timestamps, and available measurement parameters
+- dashboard/app.js: browser startup, controls, and current-condition rendering.
+- dashboard/model.js: application state and asynchronous loading lifecycle.
+- dashboard/weather.js: parsing, normalization, caching, merging, and calculations.
+- dashboard/chart.js: SVG rendering, chart interaction, table, and CSV download.
+- dashboard/config.js: fallback stations, metrics, parameter aliases, time ranges.
+- dashboard/storage.js: validated preference reads and best-effort writes.
+- dashboard/format.js: shared display and CSV formatting.
+- dashboard/style.css: theme tokens, component styles, responsive rules.
 
-### Chart Utilities (`chart-utils.js`)
-- Charts.js integration with custom vertical line plugin
-- Aggregation functions for different time periods (3h, day, week, month, year)
-- Automatic interval grouping (hourly/6h/daily based on timeframe)
-- Circular mean calculation for wind direction data
-- Timestamp parsing and localization for x-axis labels
-- Table population with clickable row highlighting
+## Data sources
 
-### UI Manager (`ui-manager.js`)
-- Theme toggle with localStorage persistence
-- Metric group selection via spotlight cards
-- Navigation handlers (brand link, archive/about buttons)
-- Keyboard accessibility for metric switching
+- Station index: assets/coord_station_meteosuisse.json (158 stations).
+- API base: https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn
+- Current: {base}/{code}/ogd-smn_{code}_t_now.csv
+- Recent: {base}/{code}/ogd-smn_{code}_t_recent.csv
+- Endpoint station codes are lowercase.
 
-### Styles (`style.css`, `globals.css`)
-- CSS custom properties for theming
-- Spotlight hover effects on metric cards
-- Custom scrollbars and context menus
-- Responsive breakpoints at 1100px and 380px
+## Data handling
 
-## Metric Groups
+- Non-empty successful feeds have a 10-minute in-memory cache.
+- Manual refresh clears the selected station's cache.
+- Poll the current feed every 30 seconds to signal newer observations.
+- Ignore responses superseded by another station/data request.
+- Merge feeds by timestamp, preserving complementary measurements.
+- Report live, partial, or unavailable data; never synthesize observations.
+- Use the latest merged observation for current conditions, including when
+  only the recent feed is available.
+- Interpret Swiss-format and compact observation timestamps as UTC.
 
-| Group | Metrics | Colors |
-|-------|---------|--------|
-| Wind | Average, Gusts, Direction | Orange, Red, Grey (dual Y-axis) |
-| Pressure | QFE, QFF, QNH | Green, Blue, Teal (dual Y-axis) |
-| Temperature | Temperature | Red |
-| Dewpoint | Dew Point | Green |
-| Humidity | Relative Humidity | Cyan |
-| Precipitation | Rainfall | Dark blue (sum aggregation) |
-| Radiation | Global Radiation | Brown (avg) |
+## History ranges
 
-## API Endpoints
+- 3h, 6h, 12h, 24h: individual observations within the rolling range.
+- 7d: averages of groups of three observations within each hour.
+- 30d: averages in two-hour blocks.
+- Wind direction is averaged circularly.
+- All selected ranges are limited by current/recent feed coverage.
+- Chart, table, and export share the same displayed dataset.
+- Measurements with shared units share a chart scale; direction uses 0–360°.
 
-- Station list: `../assets/coord_station_meteosuisse.json`
-- Current values: `{base}/{station}/ogd-smn_{station}_t_now.csv`
-- Time series: `{base}/{station}/ogd-smn_{station}_t_recent.csv`
+## Development
 
-## Cache Strategy
-
-- Current and recent CSV feeds: 10-minute TTL keyed by station code and feed suffix
-- Empty and failed responses are not cached
-- Manual refresh clears that station's feed cache before fetching
-
-## Dependencies
-
-- Chart.js (via CDN)
-- Meyer reset CSS
-
-## Usage
-
-Serve the repository root, then open `/dashboard/` in a modern browser. The app automatically detects available metric cards and populates them based on data availability at selected stations.
+- No build step or runtime JavaScript dependencies.
+- External web fonts: DM Sans, DM Mono, Manrope (with system fallbacks).
+- Node.js 20+ for development checks: npm ci; npm test; npm run format:check.
+- Full setup, module guide, behavior, and controls: dashboard/README.md.
