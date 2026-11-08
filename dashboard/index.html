@@ -81,9 +81,9 @@
           <div class="section-heading">
             <div><p class="eyebrow section-kicker">THE LAST 24 HOURS</p><h2>Station observations<span class="heading-period">.</span></h2></div>
             <div class="observation-tools">
-              <button class="refresh-button" id="refresh-data" type="button" aria-label="Refresh weather data" title="Refresh weather data"><span aria-hidden="true">↻</span> Refresh</button>
+              <div class="refresh-control"><span class="observation-time" id="observation-time">No observation time available</span><button class="refresh-button no-reading" id="refresh-data" type="button" aria-label="Refresh weather data; no observation is available" title="Refresh weather data"><span class="refresh-icon" aria-hidden="true">↻</span><span id="refresh-label">Refresh</span></button></div>
               <div class="range-tabs" role="group" aria-label="Chart time range">
-                <button class="range-tab" data-range="3h" aria-label="Last 3 hours">3h</button><button class="range-tab" data-range="6h" aria-label="Last 6 hours">6h</button><button class="range-tab" data-range="12h" aria-label="Last 12 hours">12h</button><button class="range-tab active" data-range="24h" aria-label="Last 24 hours">24h</button><button class="range-tab" data-range="7d" aria-label="Last 7 days">7d</button><button class="range-tab" data-range="30d" aria-label="Last 30 days">30d</button>
+                <button class="range-tab" data-range="3h" aria-label="Last 3 hours" aria-pressed="false">3h</button><button class="range-tab" data-range="6h" aria-label="Last 6 hours" aria-pressed="false">6h</button><button class="range-tab" data-range="12h" aria-label="Last 12 hours" aria-pressed="false">12h</button><button class="range-tab active" data-range="24h" aria-label="Last 24 hours" aria-pressed="true">24h</button><button class="range-tab" data-range="7d" aria-label="Last 7 days" aria-pressed="false">7d</button><button class="range-tab" data-range="30d" aria-label="Last 30 days" aria-pressed="false">30d</button>
               </div>
             </div>
           </div>
@@ -108,7 +108,7 @@
       <div class="customizer-heading"><div><p class="chart-caption">PERSONALIZE YOUR DASHBOARD</p><h2 id="customizer-title">Customize metrics</h2></div><button class="customizer-close" id="close-customizer" type="button" aria-label="Close metric customization">×</button></div>
       <p class="customizer-description">Choose which condition tiles to show and arrange them in your preferred order. The first visible metric becomes the large reading.</p>
       <div class="customizer-options" id="customizer-options"></div>
-      <p class="customizer-hint" id="customizer-hint" aria-live="polite">Use the arrows to reorder metrics. The first visible metric becomes the large reading.</p>
+      <p class="customizer-hint" id="customizer-hint" aria-live="polite">Drag metrics to reorder them, or use the arrows. The first visible metric becomes the large reading.</p>
     </dialog>
     <div class="toast" id="app-toast" role="status" aria-live="polite"></div>
     <script src="app.js"></script>

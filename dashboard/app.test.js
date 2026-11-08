@@ -17,6 +17,7 @@ function app(fetch) {
 
 const header = 'station_abbr;reference_timestamp;tre200s0;ure200s0;fu3010z0;fu3010z1;pp0qnhs0;pp0qffs0';
 const csv = (station, temperature) => `${header}\n${station};07.11.2026 23:50;${temperature};;2.5;4.3;1023.6;1025.2`;
+const csvAt = (station, timestamp, temperature) => `${header}\n${station};${timestamp};${temperature};;2.5;4.3;1023.6;1025.2`;
 
 test('parses MeteoSwiss measurements, UTC timestamps and missing fields', () => {
   const { parseCSV } = app();
@@ -56,4 +57,26 @@ test('calculates wind direction trends across north using the shorter turn', () 
   state.current = { timestamp: parseDate('202611081100'), direction: 10 };
 
   assert.equal(metricTrendForField({ key: 'direction', unit: '°' }).text, '↻ +20° · 1h');
+});
+
+test('flags a newer observation and clears the cue when refreshed', async () => {
+  let fetchCount = 0;
+  const fetch = async () => {
+    fetchCount++;
+    const timestamp = fetchCount <= 2 ? '07.11.2026 23:50' : '08.11.2026 00:00';
+    return { ok: true, text: async () => csvAt('PUY', timestamp, 4.5) };
+  };
+  const { state, loadStationData } = app(fetch);
+
+  await loadStationData();
+  assert.equal(state.newReadingAvailable, false);
+  assert.equal(state.latestObservation.toISOString(), '2026-11-07T23:50:00.000Z');
+
+  await loadStationData();
+  assert.equal(state.newReadingAvailable, true);
+  assert.equal(state.latestObservation.toISOString(), '2026-11-08T00:00:00.000Z');
+
+  await loadStationData({ acknowledge: true });
+  assert.equal(state.newReadingAvailable, false);
+  assert.equal(state.acknowledgedObservation.toISOString(), '2026-11-08T00:00:00.000Z');
 });

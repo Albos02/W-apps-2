@@ -37,7 +37,8 @@
     '30d': { hours: 720, points: 30, heading: '30 DAYS' }
   };
   const el = (id) => document.getElementById(id);
-  const state = { station: stations[0], group: 'temperature', range: '24h', selectedRow: -1, history: null, current: null, favorites: readStorage('isobar-favorites', []), hiddenGroups: new Set(readStorage('isobar-hidden-metrics', [])), chartPoint: -1, animateReadings: false, favoriteDrag: null };
+  const savedRange = readStorage('isobar-range', '24h');
+  const state = { station: stations[0], group: 'temperature', range: RANGE_PRESETS[savedRange] ? savedRange : '24h', selectedRow: -1, history: null, current: null, latestObservation: null, acknowledgedObservation: null, newReadingAvailable: false, isRefreshing: false, favorites: readStorage('isobar-favorites', []), hiddenGroups: new Set(readStorage('isobar-hidden-metrics', [])), chartPoint: -1, animateReadings: false, favoriteDrag: null, metricDrag: null };
   let stationOptions = stations.slice();
   let requestId = 0;
   let toastTimer = null;
@@ -166,7 +167,7 @@
     options.innerHTML = metricGroups.map((group, index) => {
       const visible = !state.hiddenGroups.has(group.id);
       const lastVisible = visible && visibleCount === 1;
-      return `<div class="customizer-row ${group.id === primary?.id ? 'primary' : ''}" data-customizer-group="${group.id}" style="--symbol:${group.color};--symbol-bg:${group.bg}"><span class="metric-symbol" aria-hidden="true">${group.symbol}</span><label class="customizer-label"><input type="checkbox" data-visibility="${group.id}" ${visible ? 'checked' : ''} ${lastVisible ? 'disabled' : ''}><span>${group.name}${group.id === primary?.id ? ' · main' : ''}</span></label><span class="customizer-detail">${group.detail}</span><span class="customizer-order"><button type="button" data-move="up" data-group="${group.id}" aria-label="Move ${group.name} up" ${index === 0 ? 'disabled' : ''}>↑</button><button type="button" data-move="down" data-group="${group.id}" aria-label="Move ${group.name} down" ${index === metricGroups.length - 1 ? 'disabled' : ''}>↓</button></span></div>`;
+      return `<div class="customizer-row ${group.id === primary?.id ? 'primary' : ''}" data-customizer-group="${group.id}" draggable="true" style="--symbol:${group.color};--symbol-bg:${group.bg}"><span class="metric-symbol" aria-hidden="true" title="Drag to reorder">${group.symbol}<span class="customizer-grip" aria-hidden="true">⠿</span></span><label class="customizer-label"><input type="checkbox" data-visibility="${group.id}" ${visible ? 'checked' : ''} ${lastVisible ? 'disabled' : ''}><span>${group.name}${group.id === primary?.id ? ' · main' : ''}</span></label><span class="customizer-detail">${group.detail}</span><span class="customizer-order"><button type="button" data-move="up" data-group="${group.id}" aria-label="Move ${group.name} up" ${index === 0 ? 'disabled' : ''}>↑</button><button type="button" data-move="down" data-group="${group.id}" aria-label="Move ${group.name} down" ${index === metricGroups.length - 1 ? 'disabled' : ''}>↓</button></span></div>`;
     }).join('');
   }
   function setMetricVisibility(groupId, visible) {
@@ -186,6 +187,46 @@
     renderChart();
     el('customizer-options').querySelector(`[data-visibility="${groupId}"]`)?.focus();
     showToast(`${visible ? 'Showing' : 'Hiding'} ${metricGroups.find((group) => group.id === groupId)?.name || 'metric'}`);
+  }
+
+  function reorderMetricGroup(draggedId, targetId) {
+    if (!draggedId || !targetId || draggedId === targetId) return;
+    const from = metricGroups.findIndex((group) => group.id === draggedId);
+    const to = metricGroups.findIndex((group) => group.id === targetId);
+    if (from < 0 || to < 0) return;
+    const [group] = metricGroups.splice(from, 1);
+    metricGroups.splice(to, 0, group);
+    saveMetricOrder();
+    renderConditionMetrics();
+    renderMetricCustomization();
+    renderCurrent();
+    renderChart();
+    showToast(`${group.name} moved ${to < from ? 'up' : 'down'}`);
+  }
+
+  function renderRangeSelection() {
+    document.querySelectorAll('.range-tab').forEach((tab) => {
+      const selected = tab.dataset.range === state.range;
+      tab.classList.toggle('active', selected);
+      tab.setAttribute('aria-pressed', String(selected));
+    });
+    el('history').querySelector('.section-kicker').textContent = `THE LAST ${RANGE_PRESETS[state.range].heading}`;
+  }
+
+  function renderRefreshCue() {
+    const button = el('refresh-data');
+    const available = Boolean(state.latestObservation);
+    const label = el('refresh-label');
+    const timestamp = state.latestObservation;
+    button.classList.toggle('has-new-reading', state.newReadingAvailable);
+    button.classList.toggle('no-reading', !available);
+    button.classList.toggle('is-refreshing', state.isRefreshing);
+    button.setAttribute('aria-label', state.newReadingAvailable ? 'Refresh: a newer observation is available' : available ? 'Refresh weather data' : 'Refresh weather data; no observation is available');
+    if (label) label.textContent = state.newReadingAvailable ? 'New reading' : 'Refresh';
+    const time = el('observation-time');
+    time.textContent = timestamp ? `Observed ${timestamp.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'No observation time available';
+    time.title = timestamp ? `Latest observation: ${timestamp.toLocaleString()}` : 'No observation time available';
+    el('last-reading').textContent = timestamp ? timestamp.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No current reading';
   }
 
   function getPointCount() { return RANGE_PRESETS[state.range].points; }
@@ -360,7 +401,7 @@
     directionTrendElement.classList.toggle('unavailable', !directionTrend);
     directionTrendElement.style.setProperty('--metric-accent', metricGroups.find((group) => group.id === 'wind').color);
     el('local-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    el('last-reading').textContent = current?.timestamp ? new Date(current.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No current reading';
+    renderRefreshCue();
     el('favorite-toggle').classList.toggle('is-favorite', state.favorites.includes(station.code));
     el('favorite-toggle').setAttribute('aria-pressed', String(state.favorites.includes(station.code)));
     el('favorite-label').textContent = state.favorites.includes(station.code) ? 'Saved to favorites' : 'Add to favorites';
@@ -433,11 +474,11 @@
     if (!response.ok) throw new Error(`Weather data request failed (${response.status})`);
     return parseCSV(await response.text());
   }
-  async function loadStationData() {
+  async function loadStationData({ acknowledge = false } = {}) {
     const id = ++requestId;
     const station = state.station;
     state.chartPoint = -1; state.selectedRow = -1;
-    state.current = null; state.history = null; renderCurrent(); renderChart();
+    state.current = null; state.history = null; state.latestObservation = null; state.newReadingAvailable = false; state.isRefreshing = true; renderCurrent(); renderChart();
     const status = el('feed-status').parentElement; status.classList.remove('offline'); el('feed-status').textContent = 'Connecting';
     const results = await Promise.allSettled([fetchCSV(station, 'now'), fetchCSV(station, 'recent')]);
     if (id !== requestId) return;
@@ -448,6 +489,18 @@
     const points = [...(historyResult.status === 'fulfilled' ? historyResult.value : []), ...(currentResult.status === 'fulfilled' ? currentResult.value : [])];
     const byTime = new Map(points.map((point) => [point.date.getTime(), point]));
     if (byTime.size > 1) state.history = [...byTime.values()].sort((a, b) => a.date - b.date);
+    const latest = [...byTime.values()].sort((a, b) => b.date - a.date)[0];
+    state.latestObservation = latest?.date || null;
+    if (state.latestObservation) {
+      if (!state.acknowledgedObservation) state.acknowledgedObservation = state.latestObservation;
+      state.newReadingAvailable = state.latestObservation > state.acknowledgedObservation;
+      if (acknowledge) {
+        state.acknowledgedObservation = state.latestObservation;
+        state.newReadingAvailable = false;
+      }
+    } else {
+      state.newReadingAvailable = false;
+    }
     if (state.current && historyResult.status === 'fulfilled' && historyResult.value.length) {
       el('feed-status').textContent = 'Live data';
     } else if (state.current || state.history) {
@@ -455,6 +508,7 @@
     } else {
       status.classList.add('offline'); el('feed-status').textContent = 'No live data';
     }
+    state.isRefreshing = false;
     state.animateReadings = true;
     renderCurrent(); renderChart();
   }
@@ -492,7 +546,7 @@
     el('station-menu').addEventListener('click', (event) => {
       const option = event.target.closest('[data-station]'); if (!option) return;
       const station = stationOptions.find((item) => item.code === option.dataset.station); if (!station) return;
-      state.station = station; el('station-search').value = station.name; closeStationMenu(); renderCurrent(); loadStationData();
+      state.station = station; state.acknowledgedObservation = null; state.newReadingAvailable = false; el('station-search').value = station.name; closeStationMenu(); renderCurrent(); loadStationData();
     });
     el('favorite-stations').addEventListener('click', (event) => {
       const button = event.target.closest('[data-station]');
@@ -500,6 +554,8 @@
       const station = stationOptions.find((item) => item.code === button.dataset.station);
       if (!station) return;
       state.station = station;
+      state.acknowledgedObservation = null;
+      state.newReadingAvailable = false;
       el('station-search').value = station.name;
       closeStationMenu();
       renderCurrent();
@@ -531,21 +587,40 @@
     el('customizer-options').addEventListener('click', (event) => {
       const button = event.target.closest('[data-move]');
       if (!button || button.disabled) return;
-      const groups = [...metricGroups];
-      const index = groups.findIndex((group) => group.id === button.dataset.group);
+      const index = metricGroups.findIndex((group) => group.id === button.dataset.group);
       const targetIndex = button.dataset.move === 'up' ? index - 1 : index + 1;
-      if (index < 0 || targetIndex < 0 || targetIndex >= groups.length) return;
-      const [group] = groups.splice(index, 1);
-      groups.splice(targetIndex, 0, group);
-      metricGroups.splice(0, metricGroups.length, ...groups);
-      saveMetricOrder();
-      state.group = metricGroups.find((item) => !state.hiddenGroups.has(item.id))?.id || metricGroups[0].id;
-      state.chartPoint = -1;
-      renderConditionMetrics();
-      renderMetricCustomization();
-      renderCurrent();
-      renderChart();
-      showToast(`${group.name} is now first`);
+      if (index < 0 || targetIndex < 0 || targetIndex >= metricGroups.length) return;
+      reorderMetricGroup(button.dataset.group, metricGroups[targetIndex].id);
+    });
+    el('customizer-options').addEventListener('dragstart', (event) => {
+      const row = event.target.closest('[data-customizer-group]');
+      if (!row || event.target.closest('input,button,label')) { event.preventDefault(); return; }
+      state.metricDrag = row.dataset.customizerGroup;
+      row.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', state.metricDrag);
+    });
+    el('customizer-options').addEventListener('dragover', (event) => {
+      const row = event.target.closest('[data-customizer-group]');
+      if (!row || !state.metricDrag || row.dataset.customizerGroup === state.metricDrag) return;
+      event.preventDefault();
+      el('customizer-options').querySelector('.drop-target')?.classList.remove('drop-target');
+      row.classList.add('drop-target');
+    });
+    el('customizer-options').addEventListener('dragleave', (event) => {
+      const row = event.target.closest('[data-customizer-group]');
+      if (row && !row.contains(event.relatedTarget)) row.classList.remove('drop-target');
+    });
+    el('customizer-options').addEventListener('drop', (event) => {
+      const row = event.target.closest('[data-customizer-group]');
+      if (!row || !state.metricDrag) return;
+      event.preventDefault();
+      reorderMetricGroup(state.metricDrag, row.dataset.customizerGroup);
+      state.metricDrag = null;
+    });
+    el('customizer-options').addEventListener('dragend', () => {
+      state.metricDrag = null;
+      el('customizer-options').querySelectorAll('.dragging,.drop-target').forEach((row) => row.classList.remove('dragging', 'drop-target'));
     });
     document.addEventListener('click', (event) => { if (!el('station-picker').contains(event.target)) closeStationMenu(); });
     el('favorite-toggle').addEventListener('click', () => {
@@ -558,13 +633,14 @@
       const dark = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = dark ? 'dark' : 'light'; saveStorage('isobar-theme', dark ? 'dark' : 'light'); el('theme-toggle').setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
     });
     document.querySelectorAll('.range-tab').forEach((button) => button.addEventListener('click', () => {
-      state.range = button.dataset.range; state.chartPoint = -1; document.querySelectorAll('.range-tab').forEach((tab) => tab.classList.toggle('active', tab === button));
-      el('history').querySelector('.section-kicker').textContent = `THE LAST ${RANGE_PRESETS[state.range].heading}`; renderChart();
+      state.range = button.dataset.range; state.chartPoint = -1;
+      saveStorage('isobar-range', state.range);
+      renderRangeSelection(); renderChart();
     }));
     el('download-csv').addEventListener('click', exportCSV);
     el('refresh-data').addEventListener('click', async () => {
       showToast('Refreshing weather observations…');
-      await loadStationData();
+      await loadStationData({ acknowledge: true });
       const status = el('feed-status').textContent;
       showToast(status === 'Live data' ? 'Weather data is up to date' : `${status} available`);
     });
@@ -596,7 +672,7 @@
   function init() {
     const theme = readStorage('isobar-theme', 'light'); document.documentElement.dataset.theme = theme;
     el('theme-toggle').setAttribute('aria-label', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
-    restoreMetricOrder(); renderConditionMetrics(); renderMetricCustomization(); renderStationMenu(); bindEvents(); renderCurrent(); renderChart(); setupSpotlight(); loadStationData(); loadStationList();
+    restoreMetricOrder(); renderConditionMetrics(); renderMetricCustomization(); renderStationMenu(); bindEvents(); renderRangeSelection(); renderCurrent(); renderChart(); setupSpotlight(); loadStationData(); loadStationList();
     window.requestAnimationFrame(() => {
       const search = el('station-search');
       search.focus({ preventScroll: true });
