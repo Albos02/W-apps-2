@@ -367,8 +367,8 @@
     el('readings-body').innerHTML = data.map((point, index) => `<tr data-point="${state.displayData.length - 1 - index}" class="${state.selectedRow === index ? 'highlighted ' : ''}${animate ? 'reading-enter' : ''}" ${animate ? `style="--reading-delay:${index * 45}ms"` : ''}><td>${point.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} &nbsp; ${point.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>${group.fields.map((field) => `<td><strong>${esc(formatTableValue(field, point.values[field.key]))}</strong></td>`).join('')}</tr>`).join('');
     state.animateReadings = false;
     el('readings-body').querySelectorAll('tr').forEach((row, index) => row.addEventListener('click', () => { state.selectedRow = index; state.chartPoint = Number(row.dataset.point); renderChart(); renderReadings(); }));
-    el('table-summary').textContent = data.length ? `Showing ${data.length} recent chart points · ${state.station.name}` : `No ${group.name.toLowerCase()} readings available for ${state.station.name}`;
-    el('data-source').textContent = data.length ? 'MeteoSwiss observations' : 'No data yet';
+    el('table-summary').textContent = data.length ? `${data.length} recent chart points · ${state.station.name}` : `No ${group.name.toLowerCase()} readings available for ${state.station.name}`;
+    el('data-source').textContent = data.length ? 'MeteoSwiss' : 'No data yet';
   }
   function renderChart() { drawChartPoint(); renderReadings(); }
 
@@ -418,7 +418,6 @@
     directionTrendElement.textContent = directionTrend?.text || '';
     directionTrendElement.classList.toggle('unavailable', !directionTrend);
     directionTrendElement.style.setProperty('--metric-accent', metricGroups.find((group) => group.id === 'wind').color);
-    el('local-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     renderRefreshCue();
     el('favorite-toggle').classList.toggle('is-favorite', state.favorites.includes(station.code));
     el('favorite-toggle').setAttribute('aria-pressed', String(state.favorites.includes(station.code)));
@@ -743,7 +742,6 @@
       search.select();
       closeStationMenu();
     });
-    window.setInterval(() => { el('local-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }, 30000);
     window.setInterval(checkForNewObservation, 30 * 1000);
   }
   init();
