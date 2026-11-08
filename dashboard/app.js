@@ -1,17 +1,17 @@
 (() => {
   const stations = [
-    { code: 'PUY', name: 'Pully', canton: 'Vaud', lat: 46.51, lon: 6.67, elevation: 456, temp: 18.4, humidity: 64, wind: 8.6, rain: 0, pressure: 1018, direction: 225, condition: 'Partly cloudy' },
-    { code: 'GVE', name: 'Geneva', canton: 'Geneva', lat: 46.25, lon: 6.13, elevation: 420, temp: 19.1, humidity: 59, wind: 10.2, rain: 0, pressure: 1017, direction: 240, condition: 'Mostly sunny' },
-    { code: 'BER', name: 'Bern / Zollikofen', canton: 'Bern', lat: 46.99, lon: 7.46, elevation: 553, temp: 17.2, humidity: 68, wind: 6.1, rain: 0.2, pressure: 1016, direction: 205, condition: 'Partly cloudy' },
-    { code: 'KLO', name: 'Zürich / Kloten', canton: 'Zürich', lat: 47.48, lon: 8.54, elevation: 426, temp: 17.8, humidity: 62, wind: 7.4, rain: 0, pressure: 1017, direction: 230, condition: 'Partly cloudy' },
-    { code: 'BAS', name: 'Basel / Binningen', canton: 'Basel-Stadt', lat: 47.54, lon: 7.58, elevation: 316, temp: 20.3, humidity: 55, wind: 12.4, rain: 0, pressure: 1015, direction: 250, condition: 'Mostly sunny' },
-    { code: 'LUG', name: 'Lugano', canton: 'Ticino', lat: 46.0, lon: 8.96, elevation: 273, temp: 21.6, humidity: 61, wind: 5.2, rain: 0, pressure: 1018, direction: 185, condition: 'Sunny intervals' },
-    { code: 'SIO', name: 'Sion', canton: 'Valais', lat: 46.22, lon: 7.33, elevation: 482, temp: 20.1, humidity: 48, wind: 4.3, rain: 0, pressure: 1019, direction: 190, condition: 'Sunny' },
-    { code: 'DAV', name: 'Davos', canton: 'Graubünden', lat: 46.81, lon: 9.85, elevation: 1594, temp: 11.8, humidity: 70, wind: 9.5, rain: 0, pressure: 1013, direction: 220, condition: 'Cloudy' },
-    { code: 'ENG', name: 'Engelberg', canton: 'Obwalden', lat: 46.82, lon: 8.41, elevation: 1036, temp: 13.5, humidity: 72, wind: 6.8, rain: 0.4, pressure: 1015, direction: 210, condition: 'Cloudy' },
-    { code: 'NEU', name: 'Neuchâtel', canton: 'Neuchâtel', lat: 47.0, lon: 6.95, elevation: 485, temp: 18.1, humidity: 63, wind: 8.1, rain: 0, pressure: 1016, direction: 230, condition: 'Partly cloudy' },
-    { code: 'CHU', name: 'Chur', canton: 'Graubünden', lat: 46.87, lon: 9.53, elevation: 556, temp: 18.9, humidity: 56, wind: 5.8, rain: 0, pressure: 1015, direction: 195, condition: 'Mostly sunny' },
-    { code: 'SMA', name: 'Zürich / Fluntern', canton: 'Zürich', lat: 47.38, lon: 8.57, elevation: 604, temp: 14.2, humidity: 66, wind: 11.3, rain: 0, pressure: 1013, direction: 235, condition: 'Cloudy' },
+    { code: 'PUY', name: 'Pully', canton: 'Vaud', lat: 46.51, lon: 6.67, elevation: 456 },
+    { code: 'GVE', name: 'Geneva', canton: 'Geneva', lat: 46.25, lon: 6.13, elevation: 420 },
+    { code: 'BER', name: 'Bern / Zollikofen', canton: 'Bern', lat: 46.99, lon: 7.46, elevation: 553 },
+    { code: 'KLO', name: 'Zürich / Kloten', canton: 'Zürich', lat: 47.48, lon: 8.54, elevation: 426 },
+    { code: 'BAS', name: 'Basel / Binningen', canton: 'Basel-Stadt', lat: 47.54, lon: 7.58, elevation: 316 },
+    { code: 'LUG', name: 'Lugano', canton: 'Ticino', lat: 46.0, lon: 8.96, elevation: 273 },
+    { code: 'SIO', name: 'Sion', canton: 'Valais', lat: 46.22, lon: 7.33, elevation: 482 },
+    { code: 'DAV', name: 'Davos', canton: 'Graubünden', lat: 46.81, lon: 9.85, elevation: 1594 },
+    { code: 'ENG', name: 'Engelberg', canton: 'Obwalden', lat: 46.82, lon: 8.41, elevation: 1036 },
+    { code: 'NEU', name: 'Neuchâtel', canton: 'Neuchâtel', lat: 47.0, lon: 6.95, elevation: 485 },
+    { code: 'CHU', name: 'Chur', canton: 'Graubünden', lat: 46.87, lon: 9.53, elevation: 556 },
+    { code: 'SMA', name: 'Zürich / Fluntern', canton: 'Zürich', lat: 47.38, lon: 8.57, elevation: 604 },
   ];
 
   const metricGroups = [
@@ -28,88 +28,198 @@
   const params = {
     temp: 'tre200s0', wind: 'fu3010z0', gust: 'fu3010z1', direction: 'dkl010z0', pressure: 'pp0qnhs0', pressureQFE: 'prestas0', pressureQFF: 'pp0qffs0', dewpoint: 'tde200s0', humidity: 'ure200s0', rain: 'rre150z0', sunshine: 'sre000z0', radiation: 'gre000z0',
   };
+  const RANGE_PRESETS = {
+    '3h': { hours: 3, points: 19, heading: '3 HOURS' },
+    '6h': { hours: 6, points: 25, heading: '6 HOURS' },
+    '12h': { hours: 12, points: 25, heading: '12 HOURS' },
+    '24h': { hours: 24, points: 25, heading: '24 HOURS' },
+    '7d': { hours: 168, points: 28, heading: '7 DAYS' },
+    '30d': { hours: 720, points: 30, heading: '30 DAYS' }
+  };
   const el = (id) => document.getElementById(id);
-  const state = { station: stations[0], group: 'temperature', range: '24h', selectedRow: -1, history: null, current: null, favorites: readStorage('isobar-favorites', []), chartPoint: -1, dragId: null };
+  const state = { station: stations[0], group: 'temperature', range: '24h', selectedRow: -1, history: null, current: null, favorites: readStorage('isobar-favorites', []), hiddenGroups: new Set(readStorage('isobar-hidden-metrics', [])), chartPoint: -1, animateReadings: false, favoriteDrag: null };
   let stationOptions = stations.slice();
   let requestId = 0;
+  let toastTimer = null;
 
   function readStorage(key, fallback) {
     try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; }
   }
   function saveStorage(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* private browsing */ } }
   function esc(value) { return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])); }
+  function showToast(message) {
+    const toast = el('app-toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => toast.classList.remove('show'), 2600);
+  }
 
   function renderStationMenu(filter = '') {
     const query = filter.trim().toLocaleLowerCase();
     const matches = stationOptions.filter((station) => `${station.name} ${station.canton} ${station.code}`.toLocaleLowerCase().includes(query));
-    const favorites = matches.filter((station) => state.favorites.includes(station.code));
+    const matchedCodes = new Set(matches.map((station) => station.code));
+    const favorites = state.favorites.map((code) => stationOptions.find((station) => station.code === code)).filter((station) => station && matchedCodes.has(station.code));
     const others = matches.filter((station) => !state.favorites.includes(station.code));
     const option = (station) => `<button class="station-option" role="option" data-station="${esc(station.code)}" aria-selected="${station.code === state.station.code}"><span>${esc(station.name)}</span><small>${station.code}</small></button>`;
     el('station-menu').innerHTML = `${favorites.length ? `<div class="menu-group-label">FAVORITES</div>${favorites.map(option).join('')}` : ''}${others.map(option).join('') || (!favorites.length ? '<div class="empty-stations">No stations found</div>' : '')}`;
   }
   function openStationMenu() { el('station-menu').classList.add('open'); renderStationMenu(el('station-search').value); }
   function closeStationMenu() { el('station-menu').classList.remove('open'); }
-
-  function renderMetricList() {
-    const list = el('metric-list');
-    list.innerHTML = metricGroups.map((group) => `<div class="metric-row ${group.id === state.group ? 'selected' : ''}" role="button" tabindex="0" aria-pressed="${group.id === state.group}" draggable="true" data-group="${group.id}" style="--symbol:${group.color};--symbol-bg:${group.bg}"><span class="metric-symbol">${group.symbol}</span><span class="metric-name">${group.name}</span><span class="metric-detail">${group.detail}</span><span class="metric-check">✓</span></div>`).join('');
-    list.querySelectorAll('.metric-row').forEach((row) => {
-      row.addEventListener('click', () => selectGroup(row.dataset.group));
-      row.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectGroup(row.dataset.group); } });
-      row.addEventListener('dragstart', (event) => { state.dragId = row.dataset.group; row.classList.add('dragging'); event.dataTransfer.effectAllowed = 'move'; });
-      row.addEventListener('dragend', () => { row.classList.remove('dragging'); list.querySelectorAll('.metric-row').forEach((item) => item.classList.remove('drag-over')); });
-      row.addEventListener('dragover', (event) => { event.preventDefault(); row.classList.add('drag-over'); });
-      row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-      row.addEventListener('drop', (event) => {
+  function renderFavoriteStations() {
+    const container = el('favorite-stations');
+    if (!container) return;
+    const favoriteStations = state.favorites.map((code) => stationOptions.find((station) => station.code === code)).filter(Boolean);
+    container.classList.toggle('empty', favoriteStations.length === 0);
+    container.innerHTML = favoriteStations.length
+      ? favoriteStations.map((station) => `<button class="favorite-station ${station.code === state.station.code ? 'active' : ''}" type="button" draggable="true" data-station="${esc(station.code)}" aria-pressed="${station.code === state.station.code}" aria-label="Switch to ${esc(station.name)}. Use Alt plus arrow keys to reorder." title="Drag to reorder favorites"><span aria-hidden="true">★</span>${esc(station.name)}</button>`).join('')
+      : '<span class="favorite-stations-hint">Star a station to keep it close</span>';
+    container.querySelectorAll('.favorite-station').forEach((button) => {
+      button.addEventListener('dragstart', (event) => {
+        state.favoriteDrag = button.dataset.station;
+        button.classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', state.favoriteDrag);
+      });
+      button.addEventListener('dragover', (event) => {
+        if (!state.favoriteDrag || state.favoriteDrag === button.dataset.station) return;
         event.preventDefault();
-        const from = metricGroups.findIndex((item) => item.id === state.dragId);
-        const to = metricGroups.findIndex((item) => item.id === row.dataset.group);
-        if (from < 0 || to < 0 || from === to) return;
-        const [item] = metricGroups.splice(from, 1); metricGroups.splice(to, 0, item); saveStorage('isobar-metric-order', metricGroups.map((entry) => entry.id)); renderMetricList();
+        button.classList.add('drop-target');
+      });
+      button.addEventListener('dragleave', () => button.classList.remove('drop-target'));
+      button.addEventListener('drop', (event) => {
+        event.preventDefault();
+        button.classList.remove('drop-target');
+        reorderFavorites(state.favoriteDrag, button.dataset.station);
+      });
+      button.addEventListener('dragend', () => {
+        button.classList.remove('dragging', 'drop-target');
+        state.favoriteDrag = null;
+      });
+      button.addEventListener('keydown', (event) => {
+        if (!event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        event.preventDefault();
+        const index = state.favorites.indexOf(button.dataset.station);
+        const targetIndex = Math.max(0, Math.min(state.favorites.length - 1, index + (event.key === 'ArrowLeft' ? -1 : 1)));
+        if (targetIndex !== index) reorderFavorites(button.dataset.station, state.favorites[targetIndex]);
       });
     });
   }
-  function selectGroup(id) { state.group = id; state.chartPoint = -1; renderMetricList(); renderChart(); renderReadings(); }
+  function reorderFavorites(draggedCode, targetCode) {
+    if (!draggedCode || !targetCode || draggedCode === targetCode) return;
+    const from = state.favorites.indexOf(draggedCode), to = state.favorites.indexOf(targetCode);
+    if (from < 0 || to < 0) return;
+    const [code] = state.favorites.splice(from, 1);
+    state.favorites.splice(to, 0, code);
+    state.favoriteDrag = null;
+    saveStorage('isobar-favorites', state.favorites);
+    renderFavoriteStations();
+    renderStationMenu(el('station-search').value);
+    showToast('Favorite order saved');
+  }
 
-  function seriesFor(group, station = state.station, count = getPointCount()) {
-    const now = Date.now(); const hours = state.range === '24h' ? 24 : state.range === '7d' ? 168 : 720; const interval = hours / (count - 1);
-    const seed = station.code.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const center = { temp: station.temp, wind: station.wind, gust: station.wind * 1.58, direction: station.direction, pressure: station.pressure, pressureQFE: station.pressure - 60, pressureQFF: station.pressure + 1, dewpoint: station.temp - (100 - station.humidity) * .17, humidity: station.humidity, rain: station.rain, sunshine: 31, radiation: 365 };
-    const hourly = state.range === '24h';
-    const amplitude = { temp: hourly ? 3.2 : 4.4, wind: 4.4, gust: 7.1, direction: 55, pressure: 2.7, pressureQFE: 2.7, pressureQFF: 2.7, dewpoint: 2.3, humidity: 8.5, rain: 0.8, sunshine: 23, radiation: 220 };
-    return Array.from({ length: count }, (_, index) => {
-      const progress = index / (count - 1); const hour = (now - hours * 3600000) + progress * hours * 3600000; const daily = Math.sin((progress * (hourly ? Math.PI * 2 : 3.2) - Math.PI / 2));
-      const values = {};
-      Object.keys(center).forEach((key) => {
-        const noise = Math.sin(index * 1.73 + seed * .13) * amplitude[key] * .21 + Math.cos(index * .51 + seed) * amplitude[key] * .1;
-        let value = center[key] + daily * amplitude[key] * (key === 'temp' || key === 'radiation' || key === 'sunshine' ? .6 : .34) + noise;
-        if (key === 'rain') value = Math.max(0, (index % 13 === seed % 13 ? station.rain + .5 : station.rain === 0 ? 0 : station.rain * .2));
-        if (key === 'sunshine') value = Math.max(0, Math.round(value));
-        if (key === 'radiation') value = Math.max(0, Math.round(value));
-        values[key] = Math.round(value * 10) / 10;
-      });
-      const date = new Date(hour); return { date, values };
+  function renderConditionMetrics() {
+    const grid = el('condition-grid');
+    const items = new Map([...grid.querySelectorAll('.condition-item[data-group]')].map((item) => [item.dataset.group, item]));
+    const primary = metricGroups.find((group) => !state.hiddenGroups.has(group.id)) || metricGroups[0];
+    const primarySelect = document.querySelector('.primary-metric-select');
+    primarySelect.dataset.group = primary.id;
+    primarySelect.style.setProperty('--metric-accent', primary.color);
+    primarySelect.setAttribute('aria-label', `Show ${primary.name.toLowerCase()} history`);
+    metricGroups.forEach((group) => {
+      const item = items.get(group.id);
+      if (!item) return;
+      item.hidden = state.hiddenGroups.has(group.id) || group.id === primary.id;
+      item.style.setProperty('--metric-accent', group.color);
+      grid.appendChild(item);
+    });
+    updateMetricSelection();
+  }
+  function updateMetricSelection() {
+    document.querySelectorAll('.metric-select').forEach((item) => {
+      const selected = item.dataset.group === state.group;
+      item.classList.toggle('selected', selected);
+      item.setAttribute('aria-pressed', String(selected));
     });
   }
-  function getPointCount() { return state.range === '24h' ? 25 : state.range === '7d' ? 28 : 30; }
+  function selectGroup(id) {
+    if (!metricGroups.some((group) => group.id === id) || state.hiddenGroups.has(id)) return;
+    state.group = id;
+    state.chartPoint = -1;
+    renderConditionMetrics();
+    renderChart();
+    renderReadings();
+  }
+  function saveMetricOrder() { saveStorage('isobar-metric-order', metricGroups.map((group) => group.id)); }
+  function renderMetricCustomization() {
+    const options = el('customizer-options');
+    if (!options) return;
+    const visibleCount = metricGroups.filter((group) => !state.hiddenGroups.has(group.id)).length;
+    const primary = metricGroups.find((group) => !state.hiddenGroups.has(group.id));
+    options.innerHTML = metricGroups.map((group, index) => {
+      const visible = !state.hiddenGroups.has(group.id);
+      const lastVisible = visible && visibleCount === 1;
+      return `<div class="customizer-row ${group.id === primary?.id ? 'primary' : ''}" data-customizer-group="${group.id}" style="--symbol:${group.color};--symbol-bg:${group.bg}"><span class="metric-symbol" aria-hidden="true">${group.symbol}</span><label class="customizer-label"><input type="checkbox" data-visibility="${group.id}" ${visible ? 'checked' : ''} ${lastVisible ? 'disabled' : ''}><span>${group.name}${group.id === primary?.id ? ' · main' : ''}</span></label><span class="customizer-detail">${group.detail}</span><span class="customizer-order"><button type="button" data-move="up" data-group="${group.id}" aria-label="Move ${group.name} up" ${index === 0 ? 'disabled' : ''}>↑</button><button type="button" data-move="down" data-group="${group.id}" aria-label="Move ${group.name} down" ${index === metricGroups.length - 1 ? 'disabled' : ''}>↓</button></span></div>`;
+    }).join('');
+  }
+  function setMetricVisibility(groupId, visible) {
+    const currentlyVisible = metricGroups.filter((group) => !state.hiddenGroups.has(group.id));
+    if (!visible && currentlyVisible.length <= 1) return;
+    if (visible) state.hiddenGroups.delete(groupId);
+    else state.hiddenGroups.add(groupId);
+    saveStorage('isobar-hidden-metrics', [...state.hiddenGroups]);
+    if (state.hiddenGroups.has(state.group)) {
+      state.group = metricGroups.find((group) => !state.hiddenGroups.has(group.id))?.id || state.group;
+      state.chartPoint = -1;
+    }
+    renderConditionMetrics();
+    renderMetricCustomization();
+    renderCurrent();
+    if (state.hiddenGroups.has(state.group)) return;
+    renderChart();
+    el('customizer-options').querySelector(`[data-visibility="${groupId}"]`)?.focus();
+    showToast(`${visible ? 'Showing' : 'Hiding'} ${metricGroups.find((group) => group.id === groupId)?.name || 'metric'}`);
+  }
 
+  function getPointCount() { return RANGE_PRESETS[state.range].points; }
+
+  function showEmptyChart(group, message) {
+    const svg = el('weather-chart');
+    svg.setAttribute('viewBox', '0 0 700 190');
+    svg.setAttribute('aria-label', `${group.name} observations for ${state.station.name}`);
+    svg.innerHTML = '';
+    el('chart-empty').textContent = message;
+    el('chart-empty').hidden = false;
+    el('chart-axis-labels').innerHTML = '';
+    el('chart-caption').textContent = group.name.toUpperCase();
+    el('chart-current-value').textContent = '—';
+    el('chart-change').textContent = '';
+    el('chart-legend').innerHTML = '';
+    el('chart-tooltip').style.display = 'none';
+    state.displayData = [];
+  }
   function drawChartPoint() {
     const group = metricGroups.find((item) => item.id === state.group);
-    let data = state.history && state.history.length ? state.history : seriesFor(group);
-    if (state.history && state.history.length) {
-      const rangeMs = (state.range === '24h' ? 24 : state.range === '7d' ? 168 : 720) * 3600000;
-      const cutoff = Date.now() - rangeMs;
-      const inRange = data.filter((point) => point.date.getTime() >= cutoff);
-      if (inRange.length > 1) data = inRange;
-      if (data.length > getPointCount()) data = aggregateSeries(data, getPointCount(), group);
+    const fields = group.fields;
+    const rangeMs = RANGE_PRESETS[state.range].hours * 3600000;
+    const cutoff = Date.now() - rangeMs;
+    let data = (state.history || []).filter((point) => point.date instanceof Date && point.date.getTime() >= cutoff);
+    if (data.length > getPointCount()) data = aggregateSeries(data, getPointCount(), group);
+    const hasMetricData = data.some((point) => fields.some((field) => Number.isFinite(point.values[field.key])));
+    if (!hasMetricData) {
+      const pending = el('feed-status').textContent === 'Connecting';
+      showEmptyChart(group, pending ? 'Waiting for live observations' : `No ${group.name.toLowerCase()} observations available for this range`);
+      return;
     }
+    el('chart-empty').hidden = true;
     const width = 700, height = 190, left = 38, right = 9, top = 12, bottom = 11;
     const plotWidth = width - left - right, plotHeight = height - top - bottom;
-    const fields = group.fields; const valuesFor = (field) => data.map((point) => point.values[field.key] ?? null);
+    const valuesFor = (field) => data.map((point) => point.values[field.key] ?? null);
     const firstValues = valuesFor(fields[0]).filter(Number.isFinite); let min = firstValues.length ? Math.min(...firstValues) : 0, max = firstValues.length ? Math.max(...firstValues) : 1;
     if (fields[0].key === 'rain') { min = 0; max = Math.max(1, max); }
     const padding = (max - min || 1) * .2; min -= padding; max += padding;
-    const x = (index) => left + index / (data.length - 1) * plotWidth;
+    const x = (index) => left + (data.length === 1 ? .5 : index / (data.length - 1)) * plotWidth;
     const y = (value, low = min, high = max) => top + (high - value) / (high - low || 1) * plotHeight;
     const grid = [0, .25, .5, .75, 1].map((fraction) => {
       const yy = top + fraction * plotHeight; const value = max - fraction * (max - min);
@@ -128,9 +238,10 @@
     const marker = state.chartPoint >= 0 ? `<line x1="${x(state.chartPoint)}" y1="${top}" x2="${x(state.chartPoint)}" y2="${top + plotHeight}" stroke="var(--ink)" stroke-opacity=".2" stroke-dasharray="3 4"/>` : '';
     const svg = el('weather-chart'); svg.setAttribute('viewBox', `0 0 ${width} ${height}`); svg.innerHTML = `<defs><linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="${fields[0].color}" stop-opacity=".2"/><stop offset="100%" stop-color="${fields[0].color}" stop-opacity="0"/></linearGradient></defs>${grid}${lineMarkup}${marker}<rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}" fill="transparent" data-chart-area="true"/>`;
     svg.setAttribute('aria-label', `${group.name} observations for ${state.station.name}`);
-    const labels = [0, .25, .5, .75, 1].map((fraction) => {
+    const labelPositions = data.length === 1 ? [.5] : [0, .25, .5, .75, 1];
+    const labels = labelPositions.map((fraction) => {
       const date = data[Math.round(fraction * (data.length - 1))].date;
-      return state.range === '24h' ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return RANGE_PRESETS[state.range].hours <= 24 ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     });
     el('chart-axis-labels').innerHTML = labels.map((label) => `<span>${esc(label)}</span>`).join('');
     el('chart-caption').textContent = group.name.toUpperCase();
@@ -180,36 +291,96 @@
   }
 
   function renderReadings() {
-    const group = metricGroups.find((item) => item.id === state.group); const data = (state.displayData || seriesFor(group)).slice(-7).reverse();
+    const group = metricGroups.find((item) => item.id === state.group); const data = (state.displayData || []).slice(-7).reverse();
+    const animate = state.animateReadings;
     const headers = ['Observation time', ...group.fields.map((field) => field.label)];
     el('readings-head').innerHTML = `<tr>${headers.map((header) => `<th>${esc(header)}</th>`).join('')}</tr>`;
-    el('readings-body').innerHTML = data.map((point, index) => `<tr data-point="${state.displayData.length - 1 - index}" class="${state.selectedRow === index ? 'highlighted' : ''}"><td>${point.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} &nbsp; ${point.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>${group.fields.map((field) => `<td><strong>${esc(formatValue(field, point.values[field.key]))}</strong></td>`).join('')}</tr>`).join('');
+    el('readings-body').innerHTML = data.map((point, index) => `<tr data-point="${state.displayData.length - 1 - index}" class="${state.selectedRow === index ? 'highlighted ' : ''}${animate ? 'reading-enter' : ''}" ${animate ? `style="--reading-delay:${index * 45}ms"` : ''}><td>${point.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} &nbsp; ${point.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>${group.fields.map((field) => `<td><strong>${esc(formatValue(field, point.values[field.key]))}</strong></td>`).join('')}</tr>`).join('');
+    state.animateReadings = false;
     el('readings-body').querySelectorAll('tr').forEach((row, index) => row.addEventListener('click', () => { state.selectedRow = index; state.chartPoint = Number(row.dataset.point); renderChart(); renderReadings(); }));
-    el('table-summary').textContent = `Showing ${data.length} recent chart points · ${state.station.name}`;
-    el('data-source').textContent = state.history ? 'MeteoSwiss observations' : 'Sample observations';
+    el('table-summary').textContent = data.length ? `Showing ${data.length} recent chart points · ${state.station.name}` : `No ${group.name.toLowerCase()} readings available for ${state.station.name}`;
+    el('data-source').textContent = data.length ? 'MeteoSwiss observations' : 'No data yet';
   }
   function renderChart() { drawChartPoint(); renderReadings(); }
 
   function renderCurrent() {
-    const station = state.station, current = state.current || station;
+    const station = state.station, current = state.current;
+    const primaryGroup = metricGroups.find((group) => !state.hiddenGroups.has(group.id)) || metricGroups[0];
+    const primaryField = primaryGroup.fields[0];
+    const primaryValue = current?.[primaryField.key];
+    const primaryPlaces = primaryField.key === 'direction' ? 0 : Math.abs(primaryValue) < 10 ? 1 : 0;
     el('current-station').textContent = station.name;
     el('station-coordinates').textContent = `${station.lat.toFixed(2)}° N   ${station.lon.toFixed(2)}° E`;
     el('station-elevation').textContent = `${station.elevation} m`;
-    el('current-temperature').textContent = Number.isFinite(current.temp) ? current.temp.toFixed(1) : '—';
-    el('current-wind').innerHTML = Number.isFinite(current.wind) ? `${current.wind.toFixed(1)} <small>km/h</small>` : '—';
-    el('current-humidity').innerHTML = Number.isFinite(current.humidity) ? `${Math.round(current.humidity)}<small>%</small>` : '—';
-    el('current-rain').innerHTML = Number.isFinite(current.rain) ? `${current.rain.toFixed(1)}<small> mm</small>` : '—';
-    el('current-pressure').innerHTML = Number.isFinite(current.pressure) ? `${Math.round(current.pressure)}<small> hPa</small>` : '—';
-    el('wind-direction').textContent = Number.isFinite(current.direction) ? directionText(current.direction) : 'Direction unavailable';
-    el('weather-description').textContent = state.current ? 'Station measurements' : station.condition;
-    el('weather-icon').hidden = Boolean(state.current);
+    el('current-temperature').textContent = Number.isFinite(primaryValue) ? primaryValue.toFixed(primaryPlaces) : '—';
+    el('primary-unit').textContent = primaryField.unit.trim();
+    el('primary-metric-label').textContent = primaryGroup.name;
+    el('primary-metric-select').dataset.group = primaryGroup.id;
+    el('primary-metric-select').setAttribute('aria-label', `Show ${primaryGroup.name.toLowerCase()} history`);
+    el('primary-metric-select').style.setProperty('--metric-accent', primaryGroup.color);
+    el('weather-icon').textContent = primaryGroup.symbol;
+    el('weather-icon').hidden = false;
+    el('weather-description').textContent = primaryField.label;
+    const primaryTrend = metricTrend(primaryGroup);
+    el('primary-trend').textContent = primaryTrend?.text || '';
+    el('primary-trend').classList.toggle('unavailable', !primaryTrend);
+    el('primary-trend').style.setProperty('--metric-accent', primaryGroup.color);
+    el('current-temperature-tile').innerHTML = Number.isFinite(current?.temp) ? `${current.temp.toFixed(1)}<small> °</small>` : '—<small> °</small>';
+    el('current-wind').innerHTML = Number.isFinite(current?.wind) ? `${current.wind.toFixed(1)} <small>km/h</small>` : '—<small> km/h</small>';
+    el('current-humidity').innerHTML = Number.isFinite(current?.humidity) ? `${Math.round(current.humidity)}<small>%</small>` : '—<small>%</small>';
+    el('current-rain').innerHTML = Number.isFinite(current?.rain) ? `${current.rain.toFixed(1)}<small> mm</small>` : '—<small> mm</small>';
+    el('current-pressure').innerHTML = Number.isFinite(current?.pressure) ? `${Math.round(current.pressure)}<small> hPa</small>` : '—<small> hPa</small>';
+    el('current-dewpoint').innerHTML = Number.isFinite(current?.dewpoint) ? `${current.dewpoint.toFixed(1)}<small> °C</small>` : '—<small> °C</small>';
+    el('current-sunshine').innerHTML = Number.isFinite(current?.sunshine) ? `${Math.round(current.sunshine)}<small> min</small>` : '—<small> min</small>';
+    el('current-radiation').innerHTML = Number.isFinite(current?.radiation) ? `${Math.round(current.radiation)}<small> W/m²</small>` : '—<small> W/m²</small>';
+    const direction = Number.isFinite(current?.direction) ? directionText(current.direction) : 'Direction unavailable';
+    const gust = Number.isFinite(current?.gust) ? ` · gust ${current.gust.toFixed(1)} km/h` : '';
+    el('wind-direction').textContent = `${direction}${gust}`;
+    el('wind-arrow').style.transform = Number.isFinite(current?.direction) ? `rotate(${current.direction}deg)` : 'rotate(0deg)';
+    metricGroups.forEach((group) => {
+      const trend = metricTrend(group);
+      const trendElement = el(`trend-${group.id}`);
+      trendElement.textContent = trend?.text || '';
+      trendElement.classList.toggle('unavailable', !trend);
+      trendElement.style.setProperty('--metric-accent', group.color);
+    });
     el('local-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    el('last-reading').textContent = current.timestamp ? new Date(current.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Sample data';
+    el('last-reading').textContent = current?.timestamp ? new Date(current.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No current reading';
     el('favorite-toggle').classList.toggle('is-favorite', state.favorites.includes(station.code));
+    el('favorite-toggle').setAttribute('aria-pressed', String(state.favorites.includes(station.code)));
     el('favorite-label').textContent = state.favorites.includes(station.code) ? 'Saved to favorites' : 'Add to favorites';
     el('favorite-toggle').querySelector('.star').textContent = state.favorites.includes(station.code) ? '★' : '☆';
+    renderFavoriteStations();
+    updateMetricSelection();
   }
   function directionText(degrees) { return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(Number(degrees) / 45) % 8]; }
+  function metricTrend(group) {
+    const key = group.fields[0].key;
+    const points = (state.history || []).filter((point) => point.date instanceof Date && Number.isFinite(point.values?.[key]));
+    if (state.current?.timestamp instanceof Date && Number.isFinite(state.current[key])) {
+      points.push({ date: state.current.timestamp, values: state.current });
+    }
+    const byTime = new Map(points.map((point) => [point.date.getTime(), point]));
+    const ordered = [...byTime.values()].sort((a, b) => a.date - b.date);
+    const latest = ordered[ordered.length - 1];
+    if (!latest) return null;
+    const cutoff = latest.date.getTime() - 60 * 60 * 1000;
+    let baseline = null;
+    for (let index = ordered.length - 1; index >= 0; index--) {
+      if (ordered[index].date.getTime() <= cutoff) { baseline = ordered[index]; break; }
+    }
+    if (!baseline) return null;
+    let delta;
+    if (key === 'rain' || key === 'sunshine') {
+      delta = ordered.reduce((sum, point) => point.date > baseline.date && point.date <= latest.date ? sum + point.values[key] : sum, 0);
+    } else {
+      delta = latest.values[key] - baseline.values[key];
+    }
+    if (!Number.isFinite(delta)) return null;
+    const arrow = delta > 0 ? '↗' : delta < 0 ? '↘' : '→';
+    const value = `${delta > 0 ? '+' : ''}${delta.toFixed(Math.abs(delta) < 10 ? 1 : 0)}${group.fields[0].unit.trim()}`;
+    return { arrow, text: `${arrow} ${value} · 1h`, direction: Math.sign(delta) };
+  }
 
   function parseCSV(text) {
     const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter((line) => line.trim());
@@ -262,8 +433,9 @@
     } else if (state.current || state.history) {
       status.classList.add('offline'); el('feed-status').textContent = 'Partial data';
     } else {
-      status.classList.add('offline'); el('feed-status').textContent = 'Sample data';
+      status.classList.add('offline'); el('feed-status').textContent = 'No live data';
     }
+    state.animateReadings = true;
     renderCurrent(); renderChart();
   }
 
@@ -277,15 +449,15 @@
         const fallback = stations.find((station) => station.code === code);
         if (!code) return null;
         const coords = props.coordinates || item.geometry?.coordinates || [];
-        return { ...(fallback || {}), code, name: props.name || props.station_name || fallback?.name || code, canton: props.canton || fallback?.canton || '', lat: Number(props.lat ?? coords[1] ?? fallback?.lat ?? 46.8), lon: Number(props.lon ?? coords[0] ?? fallback?.lon ?? 8.2), elevation: Number(props.altitude ?? props.elevation ?? fallback?.elevation ?? 500), temp: fallback?.temp ?? 16, humidity: fallback?.humidity ?? 65, wind: fallback?.wind ?? 7, rain: fallback?.rain ?? 0, pressure: fallback?.pressure ?? 1016, direction: fallback?.direction ?? 220, condition: fallback?.condition ?? 'Partly cloudy' };
+        return { ...(fallback || {}), code, name: props.name || props.station_name || fallback?.name || code, canton: props.canton || fallback?.canton || '', lat: Number(props.lat ?? coords[1] ?? fallback?.lat ?? 46.8), lon: Number(props.lon ?? coords[0] ?? fallback?.lon ?? 8.2), elevation: Number(props.altitude ?? props.elevation ?? fallback?.elevation ?? 500) };
       }).filter(Boolean);
-      if (normalized.length) { stationOptions = normalized; renderStationMenu(); }
+      if (normalized.length) { stationOptions = normalized; renderStationMenu(); renderFavoriteStations(); }
     } catch { /* bundled station list is optional; use the built-in Swiss station index */ }
   }
 
   function exportCSV() {
-    const group = metricGroups.find((item) => item.id === state.group); const data = state.displayData || seriesFor(group);
-    const rows = [['timestamp', 'source', ...group.fields.map((field) => field.label)], ...data.map((point) => [point.date.toISOString(), state.history ? 'MeteoSwiss' : 'Sample', ...group.fields.map((field) => point.values[field.key] ?? '')])];
+    const group = metricGroups.find((item) => item.id === state.group); const data = state.displayData || [];
+    const rows = [['timestamp', 'source', ...group.fields.map((field) => field.label)], ...data.map((point) => [point.date.toISOString(), state.history ? 'MeteoSwiss' : 'Unavailable', ...group.fields.map((field) => point.values[field.key] ?? '')])];
     const csv = rows.map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
     const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = `${state.station.code.toLowerCase()}-${state.group}-${state.range}.csv`; link.click(); URL.revokeObjectURL(link.href);
   }
@@ -302,20 +474,80 @@
       const station = stationOptions.find((item) => item.code === option.dataset.station); if (!station) return;
       state.station = station; el('station-search').value = station.name; closeStationMenu(); renderCurrent(); loadStationData();
     });
+    el('favorite-stations').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-station]');
+      if (!button) return;
+      const station = stationOptions.find((item) => item.code === button.dataset.station);
+      if (!station) return;
+      state.station = station;
+      el('station-search').value = station.name;
+      closeStationMenu();
+      renderCurrent();
+      loadStationData();
+    });
+    el('current-card').addEventListener('click', (event) => {
+      const metric = event.target.closest('.metric-select[data-group]');
+      if (metric) selectGroup(metric.dataset.group);
+    });
+    el('current-card').addEventListener('keydown', (event) => {
+      const metric = event.target.closest('.metric-select[role="button"][data-group]');
+      if (metric && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        selectGroup(metric.dataset.group);
+      }
+    });
+    el('customize-metrics').addEventListener('click', () => {
+      renderMetricCustomization();
+      el('metric-customizer').showModal();
+    });
+    el('close-customizer').addEventListener('click', () => el('metric-customizer').close());
+    el('metric-customizer').addEventListener('click', (event) => {
+      if (event.target === el('metric-customizer')) el('metric-customizer').close();
+    });
+    el('customizer-options').addEventListener('change', (event) => {
+      const input = event.target.closest('[data-visibility]');
+      if (input) setMetricVisibility(input.dataset.visibility, input.checked);
+    });
+    el('customizer-options').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-move]');
+      if (!button || button.disabled) return;
+      const groups = [...metricGroups];
+      const index = groups.findIndex((group) => group.id === button.dataset.group);
+      const targetIndex = button.dataset.move === 'up' ? index - 1 : index + 1;
+      if (index < 0 || targetIndex < 0 || targetIndex >= groups.length) return;
+      const [group] = groups.splice(index, 1);
+      groups.splice(targetIndex, 0, group);
+      metricGroups.splice(0, metricGroups.length, ...groups);
+      saveMetricOrder();
+      state.group = metricGroups.find((item) => !state.hiddenGroups.has(item.id))?.id || metricGroups[0].id;
+      state.chartPoint = -1;
+      renderConditionMetrics();
+      renderMetricCustomization();
+      renderCurrent();
+      renderChart();
+      showToast(`${group.name} is now first`);
+    });
     document.addEventListener('click', (event) => { if (!el('station-picker').contains(event.target)) closeStationMenu(); });
     el('favorite-toggle').addEventListener('click', () => {
-      state.favorites = state.favorites.includes(state.station.code) ? state.favorites.filter((code) => code !== state.station.code) : [...state.favorites, state.station.code];
+      const wasFavorite = state.favorites.includes(state.station.code);
+      state.favorites = wasFavorite ? state.favorites.filter((code) => code !== state.station.code) : [...state.favorites, state.station.code];
       saveStorage('isobar-favorites', state.favorites); renderCurrent(); renderStationMenu(el('station-search').value);
+      showToast(wasFavorite ? `${state.station.name} removed from favorites` : `${state.station.name} added to favorites`);
     });
     el('theme-toggle').addEventListener('click', () => {
       const dark = document.documentElement.dataset.theme !== 'dark'; document.documentElement.dataset.theme = dark ? 'dark' : 'light'; saveStorage('isobar-theme', dark ? 'dark' : 'light'); el('theme-toggle').setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
     });
     document.querySelectorAll('.range-tab').forEach((button) => button.addEventListener('click', () => {
       state.range = button.dataset.range; state.chartPoint = -1; document.querySelectorAll('.range-tab').forEach((tab) => tab.classList.toggle('active', tab === button));
-      el('history').querySelector('.section-kicker').textContent = state.range === '24h' ? 'THE LAST 24 HOURS' : state.range === '7d' ? 'THE LAST 7 DAYS' : 'THE LAST 30 DAYS'; renderChart();
+      el('history').querySelector('.section-kicker').textContent = `THE LAST ${RANGE_PRESETS[state.range].heading}`; renderChart();
     }));
     el('download-csv').addEventListener('click', exportCSV);
-    el('refresh-data').addEventListener('click', loadStationData);
+    el('refresh-data').addEventListener('click', async () => {
+      showToast('Refreshing weather observations…');
+      await loadStationData();
+      const status = el('feed-status').textContent;
+      showToast(status === 'Live data' ? 'Weather data is up to date' : `${status} available`);
+    });
     document.addEventListener('keydown', (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); el('station-search').focus(); }
       if (event.key === 'Escape') { closeStationMenu(); el('station-search').blur(); }
@@ -326,11 +558,31 @@
   function restoreMetricOrder() {
     const order = readStorage('isobar-metric-order', []);
     if (order.length) metricGroups.sort((a, b) => { const ai = order.indexOf(a.id), bi = order.indexOf(b.id); return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi); });
+    state.hiddenGroups = new Set([...state.hiddenGroups].filter((id) => metricGroups.some((group) => group.id === id)));
+    if (state.hiddenGroups.size === metricGroups.length) state.hiddenGroups.delete(metricGroups[0].id);
+    state.group = metricGroups.find((group) => !state.hiddenGroups.has(group.id)).id;
+  }
+  function setupSpotlight() {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    const track = (item, event) => {
+      const bounds = item.getBoundingClientRect();
+      item.style.setProperty('--spotlight-x', `${event.clientX - bounds.left}px`);
+      item.style.setProperty('--spotlight-y', `${event.clientY - bounds.top}px`);
+    };
+    document.querySelectorAll('.current-card, .chart-card, .readings-card, .metric-select').forEach((item) => {
+      item.addEventListener('pointermove', (event) => track(item, event));
+    });
   }
   function init() {
     const theme = readStorage('isobar-theme', 'light'); document.documentElement.dataset.theme = theme;
     el('theme-toggle').setAttribute('aria-label', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
-    restoreMetricOrder(); renderMetricList(); renderStationMenu(); bindEvents(); renderCurrent(); renderChart(); loadStationData(); loadStationList();
+    restoreMetricOrder(); renderConditionMetrics(); renderMetricCustomization(); renderStationMenu(); bindEvents(); renderCurrent(); renderChart(); setupSpotlight(); loadStationData(); loadStationList();
+    window.requestAnimationFrame(() => {
+      const search = el('station-search');
+      search.focus({ preventScroll: true });
+      search.select();
+      closeStationMenu();
+    });
     window.setInterval(() => { el('local-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }, 30000);
     window.setInterval(loadStationData, 10 * 60 * 1000);
   }
