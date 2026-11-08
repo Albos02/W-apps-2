@@ -1,5 +1,6 @@
 (() => {
   const stations = [
+    { code: 'BOU', name: 'Bouveret', canton: 'Valais', lat: 46.393447, lon: 6.857006, elevation: null },
     { code: 'PUY', name: 'Pully', canton: 'Vaud', lat: 46.51, lon: 6.67, elevation: 456 },
     { code: 'GVE', name: 'Geneva', canton: 'Geneva', lat: 46.25, lon: 6.13, elevation: 420 },
     { code: 'BER', name: 'Bern / Zollikofen', canton: 'Bern', lat: 46.99, lon: 7.46, elevation: 553 },
@@ -39,7 +40,8 @@
   const FEED_CACHE_TTL = 10 * 60 * 1000;
   const el = (id) => document.getElementById(id);
   const savedRange = readStorage('isobar-range', '24h');
-  const state = { station: stations[0], group: 'temperature', range: RANGE_PRESETS[savedRange] ? savedRange : '24h', selectedRow: -1, history: null, current: null, latestObservation: null, acknowledgedObservation: null, newReadingAvailable: false, isRefreshing: false, favorites: readStorage('isobar-favorites', []), hiddenGroups: new Set(readStorage('isobar-hidden-metrics', [])), chartPoint: -1, animateReadings: false, favoriteDrag: null, metricDrag: null };
+  const savedStationCode = readStorage('isobar-station', 'BOU');
+  const state = { station: stations.find((station) => station.code === savedStationCode) || stations.find((station) => station.code === 'BOU'), group: 'temperature', range: RANGE_PRESETS[savedRange] ? savedRange : '24h', selectedRow: -1, history: null, current: null, latestObservation: null, acknowledgedObservation: null, newReadingAvailable: false, isRefreshing: false, favorites: readStorage('isobar-favorites', []), hiddenGroups: new Set(readStorage('isobar-hidden-metrics', [])), chartPoint: -1, animateReadings: false, favoriteDrag: null, metricDrag: null };
   let stationOptions = stations.slice();
   let requestId = 0;
   const feedCache = new Map();
@@ -138,7 +140,7 @@
     metricGroups.forEach((group) => {
       const groupItems = items.get(group.id) || [];
       groupItems.forEach((item) => {
-        item.hidden = state.hiddenGroups.has(group.id) || group.id === primary.id;
+        item.hidden = state.hiddenGroups.has(group.id) || (group.id === primary.id && item.dataset.keepWhenPrimary !== 'true');
         item.style.setProperty('--metric-accent', group.color);
         grid.appendChild(item);
       });
@@ -226,7 +228,7 @@
     button.setAttribute('aria-label', state.newReadingAvailable ? 'Refresh: a newer observation is available' : available ? 'Refresh weather data' : 'Refresh weather data; no observation is available');
     if (label) label.textContent = state.newReadingAvailable ? 'New reading' : 'Refresh';
     const time = el('observation-time');
-    time.textContent = timestamp ? `Observed ${timestamp.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'No observation time available';
+    time.textContent = timestamp ? `Last reading ${timestamp.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'No observation time available';
     time.title = timestamp ? `Latest observation: ${timestamp.toLocaleString()}` : 'No observation time available';
     el('last-reading').textContent = timestamp ? timestamp.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No current reading';
   }
@@ -565,8 +567,13 @@
       }).filter(Boolean);
       if (normalized.length) {
         stationOptions = normalized;
-        state.station = stationOptions.find((station) => station.code === state.station.code) || state.station;
+        const previousCode = state.station.code;
+        const preferredCode = readStorage('isobar-station', 'BOU');
+        state.station = stationOptions.find((station) => station.code === preferredCode) || stationOptions.find((station) => station.code === previousCode) || state.station;
+        const search = el('station-search');
+        if (search) search.value = state.station.name;
         renderStationMenu(); renderFavoriteStations(); renderCurrent();
+        if (state.station.code !== previousCode) loadStationData();
       }
     } catch { /* shared station list is optional; use the built-in Swiss station index */ }
   }
@@ -601,7 +608,7 @@
     el('station-menu').addEventListener('click', (event) => {
       const option = event.target.closest('[data-station]'); if (!option) return;
       const station = stationOptions.find((item) => item.code === option.dataset.station); if (!station) return;
-      state.station = station; state.acknowledgedObservation = null; state.newReadingAvailable = false; el('station-search').value = station.name; closeStationMenu(); renderCurrent(); loadStationData();
+      state.station = station; saveStorage('isobar-station', station.code); state.acknowledgedObservation = null; state.newReadingAvailable = false; el('station-search').value = station.name; closeStationMenu(); renderCurrent(); loadStationData();
     });
     el('favorite-stations').addEventListener('click', (event) => {
       const button = event.target.closest('[data-station]');
@@ -609,6 +616,7 @@
       const station = stationOptions.find((item) => item.code === button.dataset.station);
       if (!station) return;
       state.station = station;
+      saveStorage('isobar-station', station.code);
       state.acknowledgedObservation = null;
       state.newReadingAvailable = false;
       el('station-search').value = station.name;
@@ -727,7 +735,7 @@
   function init() {
     const theme = readStorage('isobar-theme', 'light'); document.documentElement.dataset.theme = theme;
     el('theme-toggle').setAttribute('aria-label', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
-    restoreMetricOrder(); renderConditionMetrics(); renderMetricCustomization(); renderStationMenu(); bindEvents(); renderRangeSelection(); renderCurrent(); renderChart(); loadStationData(); loadStationList();
+    restoreMetricOrder(); renderConditionMetrics(); renderMetricCustomization(); renderStationMenu(); bindEvents(); renderRangeSelection(); renderCurrent(); renderChart(); setupSpotlight(); loadStationData(); loadStationList();
     window.requestAnimationFrame(() => {
       const search = el('station-search');
       search.focus({ preventScroll: true });

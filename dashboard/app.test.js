@@ -3,9 +3,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function app(fetch) {
+function app(fetch, stored = {}) {
   const status = { textContent: '', parentElement: { classList: { add() {}, remove() {} } } };
-  const context = { fetch, document: { getElementById: () => status }, localStorage: { getItem: () => null }, console };
+  const context = { fetch, document: { getElementById: () => status }, localStorage: { getItem: (key) => Object.hasOwn(stored, key) ? JSON.stringify(stored[key]) : null, setItem: (key, value) => { stored[key] = JSON.parse(value); } }, console };
   const source = fs.readFileSync(`${__dirname}/app.js`, 'utf8').replace('  init();', `
     renderCurrent = () => {};
     renderChart = () => {};
@@ -32,6 +32,14 @@ test('parses MeteoSwiss measurements, UTC timestamps and missing fields', () => 
   assert.equal(point.values.pressureQFF, 1025.2);
   assert.equal(point.values.humidity, undefined);
   assert.equal(parseCSV(`${header}\nBER;invalid;4.5;;;;;`).length, 0);
+});
+
+test('starts at Bouveret by default and restores a previously selected station', () => {
+  const firstVisit = app();
+  assert.equal(firstVisit.state.station.code, 'BOU');
+
+  const returningVisit = app(undefined, { 'isobar-station': 'PUY' });
+  assert.equal(returningVisit.state.station.code, 'PUY');
 });
 
 test('ignores stale station responses and uses the official endpoint', async () => {
