@@ -248,3 +248,28 @@
 .readings-card .table-scroll{max-height:340px;overscroll-behavior-y:auto}
 @media(max-width:700px){.readings-card .table-scroll{max-height:310px}}
 .dashboard-grid{margin-bottom:12px}
+
+/* Recent readings: cap each column, then shrink the whole section to fit. */
+.readings-card{width:max-content;max-width:100%}
+.readings-card .table-scroll{width:auto;max-width:100%}
+.readings-card table{width:auto;min-width:0;table-layout:auto}
+.readings-card th,.readings-card td{width:auto;max-width:65px;white-space:normal;overflow-wrap:anywhere}
+.readings-card th:first-child,.readings-card td:first-child{width:auto;max-width:120px}
+.readings-card th:not(:first-child),.readings-card td:not(:first-child){text-align:center}
+.readings-card .table-footer{width:0;min-width:100%;flex-wrap:wrap;gap:4px 12px}
+.readings-card .table-footer span{min-width:0;overflow-wrap:anywhere}
+.readings-card:before{z-index:2}
+.readings-card .readings-heading,.readings-card .table-footer{z-index:3}
+.readings-card .readings-heading{width:0;min-width:100%;flex-direction:row;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:6px 12px}
+.readings-card .readings-heading>div{min-width:0}
+.readings-card .download-button{flex:none}
+.chart-card{display:flex;flex-direction:column}
+.chart-wrap{flex:1 1 340px;height:auto;min-height:0}
+@media(max-width:700px){.chart-wrap{flex-basis:300px}}
+@media(max-width:700px){
+  .readings-card{width:100%}
+  .readings-card .table-scroll{width:100%}
+  .readings-card table{width:100%;min-width:100%}
+  .readings-card th,.readings-card td{max-width:none}
+  .readings-card th:first-child,.readings-card td:first-child{width:40%;max-width:none}
+}

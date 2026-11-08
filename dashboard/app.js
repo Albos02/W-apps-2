@@ -16,11 +16,11 @@
   ];
 
   const metricGroups = [
-    { id: 'temperature', name: 'Temperature', detail: '°C', symbol: '☼', color: '#d98764', bg: '#fbf0e9', fields: [{ key: 'temp', label: 'Air temperature', color: '#d98764', unit: '°' }] },
-    { id: 'wind', name: 'Wind', detail: 'km/h', symbol: '↗', color: '#d88f53', bg: '#fbf1e6', fields: [{ key: 'wind', label: 'Average wind', color: '#df9757', unit: ' km/h' }, { key: 'gust', label: 'Wind gusts', color: '#cf675d', unit: ' km/h' }, { key: 'direction', label: 'Direction', color: '#87918a', unit: '°' }] },
-    { id: 'pressure', name: 'Pressure', detail: 'hPa', symbol: '⌁', color: '#68a274', bg: '#eaf4eb', fields: [{ key: 'pressure', label: 'Sea level (QNH)', color: '#68a274', unit: ' hPa' }, { key: 'pressureQFE', label: 'Station (QFE)', color: '#5e8db3', unit: ' hPa' }, { key: 'pressureQFF', label: 'Reduced (QFF)', color: '#58a69b', unit: ' hPa' }] },
+    { id: 'temperature', name: 'Temperature', detail: '°C', symbol: '☼', color: '#d98764', bg: '#fbf0e9', fields: [{ key: 'temp', label: 'Air Temp', color: '#d98764', unit: '°' }] },
+    { id: 'wind', name: 'Wind', detail: 'km/h', symbol: '↗', color: '#d88f53', bg: '#fbf1e6', fields: [{ key: 'wind', label: 'Avrg wind', color: '#df9757', unit: ' km/h' }, { key: 'gust', label: 'Wind gusts', color: '#cf675d', unit: ' km/h' }, { key: 'direction', label: 'Wind dir', color: '#87918a', unit: '°' }] },
+    { id: 'pressure', name: 'Pressure', detail: 'hPa', symbol: '⌁', color: '#68a274', bg: '#eaf4eb', fields: [{ key: 'pressure', label: 'QNH', color: '#68a274', unit: ' hPa' }, { key: 'pressureQFE', label: 'QFE', color: '#5e8db3', unit: ' hPa' }, { key: 'pressureQFF', label: 'QFF', color: '#58a69b', unit: ' hPa' }] },
     { id: 'dewpoint', name: 'Dewpoint', detail: '°C', symbol: '◌', color: '#71a885', bg: '#ebf4ed', fields: [{ key: 'dewpoint', label: 'Dew point', color: '#71a885', unit: '°' }] },
-    { id: 'humidity', name: 'Humidity', detail: '%', symbol: '％', color: '#58a9ad', bg: '#e8f3f1', fields: [{ key: 'humidity', label: 'Relative humidity', color: '#58a9ad', unit: '%' }] },
+    { id: 'humidity', name: 'Humidity', detail: '%', symbol: '％', color: '#58a9ad', bg: '#e8f3f1', fields: [{ key: 'humidity', label: 'Rel humidity', color: '#58a9ad', unit: '%' }] },
     { id: 'precipitation', name: 'Precipitation', detail: 'mm', symbol: '◒', color: '#5f8eba', bg: '#ebf1f7', fields: [{ key: 'rain', label: 'Precipitation', color: '#5487b3', unit: ' mm' }] },
     { id: 'sunshine', name: 'Sunshine', detail: 'min', symbol: '◷', color: '#d2a34e', bg: '#f8f3e7', fields: [{ key: 'sunshine', label: 'Sunshine duration', color: '#d2a34e', unit: ' min' }] },
     { id: 'radiation', name: 'Radiation', detail: 'W/m²', symbol: '✳', color: '#ae7954', bg: '#f4eee8', fields: [{ key: 'radiation', label: 'Global radiation', color: '#ae7954', unit: ' W/m²' }] },
@@ -362,7 +362,7 @@
   function renderReadings() {
     const group = metricGroups.find((item) => item.id === state.group); const data = (state.displayData || []).slice().reverse();
     const animate = state.animateReadings;
-    const headers = ['Observation time', ...group.fields.map((field) => `${field.label} (${tableUnit(field)})`)];
+    const headers = ['Time', ...group.fields.map((field) => `${field.label} (${tableUnit(field)})`)];
     el('readings-head').innerHTML = `<tr>${headers.map((header) => `<th>${esc(header)}</th>`).join('')}</tr>`;
     el('readings-body').innerHTML = data.map((point, index) => `<tr data-point="${state.displayData.length - 1 - index}" class="${state.selectedRow === index ? 'highlighted ' : ''}${animate ? 'reading-enter' : ''}" ${animate ? `style="--reading-delay:${index * 45}ms"` : ''}><td>${point.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} &nbsp; ${point.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>${group.fields.map((field) => `<td><strong>${esc(formatTableValue(field, point.values[field.key]))}</strong></td>`).join('')}</tr>`).join('');
     state.animateReadings = false;
