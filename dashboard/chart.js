@@ -17,7 +17,15 @@ const PLOT = {
   bottom: 11,
 };
 
-export function createChartView(state, metricGroups) {
+export function createChartView(
+  state,
+  metricGroups,
+  {
+    document = globalThis.document,
+    window = globalThis.window,
+    URL = globalThis.URL,
+  } = {},
+) {
   const el = (id) => document.getElementById(id);
   const svg = el("weather-chart");
   const tooltip = el("chart-tooltip");
@@ -222,7 +230,7 @@ export function createChartView(state, metricGroups) {
       Number.isFinite(first) && Number.isFinite(last) ? last - first : NaN;
     el("chart-current-value").textContent = formatValue(fields[0], last);
     el("chart-change").innerHTML = Number.isFinite(delta)
-      ? `${delta >= 0 ? "↗" : "↘"} ${Math.abs(delta).toFixed(1)}${fields[0].unit} <small>in shown data</small>`
+      ? `${delta >= 0 ? "↗" : "↘"} ${esc(formatValue(fields[0], Math.abs(delta)))} <small>in shown data</small>`
       : "";
     el("chart-change").style.color =
       delta >= 0 ? "var(--accent)" : "var(--muted)";

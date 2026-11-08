@@ -20,7 +20,7 @@ npm test
 npm run format:check
 ```
 
-Run `npm run format` to format the dashboard. Tests use Node's built-in test runner and injected fetch/storage implementations, so they do not need a browser or a network connection.
+Run `npm run format` to format the dashboard. Tests use Node's built-in test runner, injected fetch/storage implementations, and a lightweight DOM stub against the dashboard HTML, so they do not need a browser or a network connection. DOM coverage includes chart empty/data transitions, linked table highlighting, CSV downloads, and config-driven metric tiles.
 
 ## Structure
 
@@ -39,6 +39,7 @@ Run `npm run format` to format the dashboard. Tests use Node's built-in test run
 
 - Current and recent CSV feeds are cached in memory for 10 minutes. Manual refresh clears the selected station's cache. Failed and empty responses are retried.
 - Every 30 seconds the app checks for newer observations and shows a refresh cue without replacing the displayed data.
+- Station changes and refreshes abort superseded feed requests and polls. Polling is skipped during a refresh; a new poll cancels any previous poll still in flight.
 - Both feeds are merged by timestamp, preserving complementary measurements. If the current feed is unavailable, the latest recent observation supplies current conditions and the status indicates partial data.
 - Short ranges show individual observations. The 7-day view averages groups of three within each hour; the 30-day view uses 2-hour averages. Wind direction uses a circular mean.
 - The chart, table, and CSV use the same filtered/aggregated observations. Feed coverage may be shorter than the selected range. Missing measurements remain unavailable; no weather readings are generated.

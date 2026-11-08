@@ -4,6 +4,7 @@ import {
   FEED_CACHE_TTL,
   stations,
 } from "./config.js";
+import { formatNumber } from "./format.js";
 
 const HOUR = 60 * 60 * 1000;
 const isValidDate = (date) =>
@@ -195,7 +196,7 @@ export function metricTrendForField(field, history, current) {
         : delta < 0
           ? "↘"
           : "→";
-  const value = `${delta > 0 ? "+" : ""}${delta.toFixed(Math.abs(delta) < 10 ? 1 : 0)}${field.unit.trim()}`;
+  const value = `${delta > 0 ? "+" : ""}${formatNumber(field, delta)}${field.unit.trim()}`;
   return { arrow, text: `${arrow} ${value} · 1h`, direction: Math.sign(delta) };
 }
 
