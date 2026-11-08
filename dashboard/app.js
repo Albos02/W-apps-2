@@ -161,6 +161,7 @@
     renderConditionMetrics();
     renderChart();
     renderReadings();
+    el('history')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   function saveMetricOrder() { saveStorage('isobar-metric-order', metricGroups.map((group) => group.id)); }
   function renderMetricCustomization() {
