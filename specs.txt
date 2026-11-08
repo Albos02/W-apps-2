@@ -14,12 +14,13 @@ A modern, responsive web application for displaying real-time weather measuremen
 
 ## Architecture
 
-### Data Layer (`data-retrieval.js`)
-- Loads cached station list from JSON file
+### Data Retrieval (`dashboard/app.js`)
+- Loads the station list from `../assets/coord_station_meteosuisse.json`, with a built-in fallback
 - Fetches current values via `/ogd-smn_<lower>_t_now.csv` endpoints
-- Fetches time-series history via `/ogd-smn_<lower>_t_recent.csv` endpoints
-- 10-minute cache for current data, shared cache for time-series to prevent hiding errors
-- Parses CSV responses handling timestamp formats and optional parameters
+- Fetches recent observations via `/ogd-smn_<lower>_t_recent.csv` endpoints
+- Caches each non-empty successful station/feed response in memory for 10 minutes; manual refresh bypasses the cache
+- Checks for a newer current observation every 30 seconds without reloading the full dashboard
+- Parses CSV responses, timestamps, and available measurement parameters
 
 ### Chart Utilities (`chart-utils.js`)
 - Charts.js integration with custom vertical line plugin
@@ -61,9 +62,9 @@ A modern, responsive web application for displaying real-time weather measuremen
 
 ## Cache Strategy
 
-- Current data: 10-minute TTL keyed by station code
-- Time-series: Shared cache to avoid hiding transient failures behind stale errors
-- Cache cleared via `clearCache()` function for manual refresh
+- Current and recent CSV feeds: 10-minute TTL keyed by station code and feed suffix
+- Empty and failed responses are not cached
+- Manual refresh clears that station's feed cache before fetching
 
 ## Dependencies
 
@@ -72,4 +73,4 @@ A modern, responsive web application for displaying real-time weather measuremen
 
 ## Usage
 
-Open the HTML file in a modern browser. The app automatically detects available metric cards and populates them based on data availability at selected stations.
+Serve the repository root, then open `/dashboard/` in a modern browser. The app automatically detects available metric cards and populates them based on data availability at selected stations.

@@ -29,18 +29,20 @@
     temp: 'tre200s0', wind: 'fu3010z0', gust: 'fu3010z1', direction: 'dkl010z0', pressure: 'pp0qnhs0', pressureQFE: 'prestas0', pressureQFF: 'pp0qffs0', dewpoint: 'tde200s0', humidity: 'ure200s0', rain: 'rre150z0', sunshine: 'sre000z0', radiation: 'gre000z0',
   };
   const RANGE_PRESETS = {
-    '3h': { hours: 3, points: 19, heading: '3 HOURS' },
-    '6h': { hours: 6, points: 25, heading: '6 HOURS' },
-    '12h': { hours: 12, points: 25, heading: '12 HOURS' },
-    '24h': { hours: 24, points: 25, heading: '24 HOURS' },
-    '7d': { hours: 168, points: 28, heading: '7 DAYS' },
-    '30d': { hours: 720, points: 30, heading: '30 DAYS' }
+    '3h': { hours: 3, heading: '3 HOURS' },
+    '6h': { hours: 6, heading: '6 HOURS' },
+    '12h': { hours: 12, heading: '12 HOURS' },
+    '24h': { hours: 24, heading: '24 HOURS' },
+    '7d': { hours: 168, heading: '7 DAYS', aggregation: 'triads' },
+    '30d': { hours: 720, heading: '30 DAYS', aggregation: 'twoHours' }
   };
+  const FEED_CACHE_TTL = 10 * 60 * 1000;
   const el = (id) => document.getElementById(id);
   const savedRange = readStorage('isobar-range', '24h');
   const state = { station: stations[0], group: 'temperature', range: RANGE_PRESETS[savedRange] ? savedRange : '24h', selectedRow: -1, history: null, current: null, latestObservation: null, acknowledgedObservation: null, newReadingAvailable: false, isRefreshing: false, favorites: readStorage('isobar-favorites', []), hiddenGroups: new Set(readStorage('isobar-hidden-metrics', [])), chartPoint: -1, animateReadings: false, favoriteDrag: null, metricDrag: null };
   let stationOptions = stations.slice();
   let requestId = 0;
+  const feedCache = new Map();
   let toastTimer = null;
 
   function readStorage(key, fallback) {
@@ -229,11 +231,9 @@
     el('last-reading').textContent = timestamp ? timestamp.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No current reading';
   }
 
-  function getPointCount() { return RANGE_PRESETS[state.range].points; }
-
   function showEmptyChart(group, message) {
     const svg = el('weather-chart');
-    svg.setAttribute('viewBox', '0 0 700 190');
+    svg.setAttribute('viewBox', '0 0 700 250');
     svg.setAttribute('aria-label', `${group.name} observations for ${state.station.name}`);
     svg.innerHTML = '';
     el('chart-empty').textContent = message;
@@ -246,13 +246,16 @@
     el('chart-tooltip').style.display = 'none';
     state.displayData = [];
   }
+  function filterHistoryForRange(data, range, now = Date.now()) {
+    const cutoff = now - RANGE_PRESETS[range].hours * 3600000;
+    return data.filter((point) => point.date instanceof Date && point.date.getTime() >= cutoff);
+  }
   function drawChartPoint() {
     const group = metricGroups.find((item) => item.id === state.group);
     const fields = group.fields;
-    const rangeMs = RANGE_PRESETS[state.range].hours * 3600000;
-    const cutoff = Date.now() - rangeMs;
-    let data = (state.history || []).filter((point) => point.date instanceof Date && point.date.getTime() >= cutoff);
-    if (data.length > getPointCount()) data = aggregateSeries(data, getPointCount(), group);
+    let data = filterHistoryForRange(state.history || [], state.range);
+    const aggregation = RANGE_PRESETS[state.range].aggregation;
+    if (aggregation) data = aggregateSeries(data, group, aggregation);
     const hasMetricData = data.some((point) => fields.some((field) => Number.isFinite(point.values[field.key])));
     if (!hasMetricData) {
       const pending = el('feed-status').textContent === 'Connecting';
@@ -260,7 +263,7 @@
       return;
     }
     el('chart-empty').hidden = true;
-    const width = 700, height = 190, left = 38, right = 9, top = 12, bottom = 11;
+    const width = 700, height = 250, left = 38, right = 9, top = 12, bottom = 11;
     const plotWidth = width - left - right, plotHeight = height - top - bottom;
     const valuesFor = (field) => data.map((point) => point.values[field.key] ?? null);
     const firstValues = valuesFor(fields[0]).filter(Number.isFinite); let min = firstValues.length ? Math.min(...firstValues) : 0, max = firstValues.length ? Math.max(...firstValues) : 1;
@@ -306,17 +309,29 @@
   function formatValue(field, value) { return Number.isFinite(value) ? `${formatNumber(field, value)}${field.unit}` : '—'; }
   function tableUnit(field) { return ['temp', 'dewpoint'].includes(field.key) ? '°C' : field.unit.trim(); }
   function formatTableValue(field, value) { const number = formatNumber(field, value); return Number.isFinite(value) && field.unit.trim() === '°' ? `${number}°` : number; }
-  function aggregateSeries(data, count, group) {
-    return Array.from({ length: count }, (_, bucket) => {
-      const start = Math.floor(bucket * data.length / count);
-      const end = Math.max(start + 1, Math.floor((bucket + 1) * data.length / count));
-      const points = data.slice(start, end);
+  function aggregateSeries(data, group, aggregation) {
+    const bucketSize = aggregation === 'twoHours' ? 2 * 3600000 : 3600000;
+    const byInterval = new Map();
+    data.forEach((point) => {
+      const interval = Math.floor(point.date.getTime() / bucketSize);
+      const bucket = byInterval.get(interval) || [];
+      bucket.push(point);
+      byInterval.set(interval, bucket);
+    });
+    let buckets = [...byInterval.values()];
+    if (aggregation === 'triads') {
+      buckets = buckets.flatMap((hourPoints) => {
+        const groups = [];
+        for (let index = 0; index < hourPoints.length; index += 3) groups.push(hourPoints.slice(index, index + 3));
+        return groups;
+      });
+    }
+    return buckets.map((points) => {
       const values = {};
       group.fields.forEach((field) => {
         const nums = points.map((point) => point.values[field.key]).filter(Number.isFinite);
         if (!nums.length) return;
-        if (field.key === 'rain' || field.key === 'sunshine') values[field.key] = nums.reduce((sum, value) => sum + value, 0);
-        else if (field.key === 'direction') {
+        if (field.key === 'direction') {
           const radians = nums.map((value) => value * Math.PI / 180);
           const angle = Math.atan2(radians.reduce((sum, value) => sum + Math.sin(value), 0), radians.reduce((sum, value) => sum + Math.cos(value), 0));
           values[field.key] = (angle * 180 / Math.PI + 360) % 360;
@@ -362,7 +377,7 @@
     const primaryPlaces = primaryField.key === 'direction' ? 0 : Math.abs(primaryValue) < 10 ? 1 : 0;
     el('current-station').textContent = station.name;
     el('station-coordinates').textContent = `${station.lat.toFixed(2)}° N   ${station.lon.toFixed(2)}° E`;
-    el('station-elevation').textContent = `${station.elevation} m`;
+    el('station-elevation').textContent = Number.isFinite(station.elevation) ? `${station.elevation} m` : '—';
     el('current-temperature').textContent = Number.isFinite(primaryValue) ? primaryValue.toFixed(primaryPlaces) : '—';
     el('primary-unit').textContent = primaryField.unit.trim();
     el('primary-metric-label').textContent = primaryGroup.name;
@@ -467,16 +482,30 @@
     if (/^\d{12,14}$/.test(value)) return new Date(Number(value.slice(0, 4)), Number(value.slice(4, 6)) - 1, Number(value.slice(6, 8)), Number(value.slice(8, 10)), Number(value.slice(10, 12)));
     const date = new Date(value); return Number.isNaN(date.getTime()) ? null : date;
   }
-  async function fetchCSV(station, suffix) {
+  async function fetchCSV(station, suffix, { bypassCache = false } = {}) {
+    const cacheKey = `${station.code}:${suffix}`;
+    const cached = feedCache.get(cacheKey);
+    if (!bypassCache && cached) {
+      if (cached.expiresAt > Date.now()) return cached.points;
+      feedCache.delete(cacheKey);
+    }
     const code = station.code.toLowerCase();
     const url = `https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/${code}/ogd-smn_${code}_t_${suffix}.csv`;
     const response = await fetch(url, { cache: 'no-store', mode: 'cors' });
     if (!response.ok) throw new Error(`Weather data request failed (${response.status})`);
-    return parseCSV(await response.text());
+    const points = parseCSV(await response.text());
+    if (!bypassCache && points.length) feedCache.set(cacheKey, { points, expiresAt: Date.now() + FEED_CACHE_TTL });
+    return points;
   }
-  async function loadStationData({ acknowledge = false } = {}) {
+  function clearStationFeedCache(stationCode) {
+    for (const key of feedCache.keys()) {
+      if (key.startsWith(`${stationCode}:`)) feedCache.delete(key);
+    }
+  }
+  async function loadStationData({ acknowledge = false, forceRefresh = false } = {}) {
     const id = ++requestId;
     const station = state.station;
+    if (forceRefresh) clearStationFeedCache(station.code);
     state.chartPoint = -1; state.selectedRow = -1;
     state.current = null; state.history = null; state.latestObservation = null; state.newReadingAvailable = false; state.isRefreshing = true; renderCurrent(); renderChart();
     const status = el('feed-status').parentElement; status.classList.remove('offline'); el('feed-status').textContent = 'Connecting';
@@ -519,14 +548,40 @@
       if (!response.ok) return;
       const payload = await response.json(); const rows = Array.isArray(payload) ? payload : payload.stations || payload.features || [];
       const normalized = rows.map((item) => {
+        if (Array.isArray(item)) {
+          const [rawCode, rawLat, rawLon, name, canton] = item;
+          const code = String(rawCode || '').toUpperCase();
+          const fallback = stations.find((station) => station.code === code);
+          const lat = Number(rawLat), lon = Number(rawLon);
+          if (!code || !name || rawLat == null || rawLon == null || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+          return { ...(fallback || {}), code, name: String(name).replace(' / ', '/'), canton: canton || fallback?.canton || '', lat, lon, elevation: fallback?.elevation ?? null };
+        }
         const props = item.properties || item; const code = String(props.code || props.station || props.station_abbr || props.abr || '').toUpperCase();
         const fallback = stations.find((station) => station.code === code);
         if (!code) return null;
         const coords = props.coordinates || item.geometry?.coordinates || [];
-        return { ...(fallback || {}), code, name: props.name || props.station_name || fallback?.name || code, canton: props.canton || fallback?.canton || '', lat: Number(props.lat ?? coords[1] ?? fallback?.lat ?? 46.8), lon: Number(props.lon ?? coords[0] ?? fallback?.lon ?? 8.2), elevation: Number(props.altitude ?? props.elevation ?? fallback?.elevation ?? 500) };
+        const elevation = props.altitude ?? props.elevation ?? fallback?.elevation;
+        return { ...(fallback || {}), code, name: props.name || props.station_name || fallback?.name || code, canton: props.canton || fallback?.canton || '', lat: Number(props.lat ?? coords[1] ?? fallback?.lat ?? 46.8), lon: Number(props.lon ?? coords[0] ?? fallback?.lon ?? 8.2), elevation: elevation == null ? null : Number(elevation) };
       }).filter(Boolean);
-      if (normalized.length) { stationOptions = normalized; renderStationMenu(); renderFavoriteStations(); }
-    } catch { /* bundled station list is optional; use the built-in Swiss station index */ }
+      if (normalized.length) {
+        stationOptions = normalized;
+        state.station = stationOptions.find((station) => station.code === state.station.code) || state.station;
+        renderStationMenu(); renderFavoriteStations(); renderCurrent();
+      }
+    } catch { /* shared station list is optional; use the built-in Swiss station index */ }
+  }
+
+  async function checkForNewObservation() {
+    const station = state.station;
+    try {
+      const points = await fetchCSV(station, 'now', { bypassCache: true });
+      if (station.code !== state.station.code) return;
+      const latest = points[points.length - 1]?.date;
+      if (latest && state.latestObservation && latest > state.latestObservation) {
+        state.newReadingAvailable = true;
+        renderRefreshCue();
+      }
+    } catch { /* the next manual refresh can retry the live feed */ }
   }
 
   function exportCSV() {
@@ -640,7 +695,7 @@
     el('download-csv').addEventListener('click', exportCSV);
     el('refresh-data').addEventListener('click', async () => {
       showToast('Refreshing weather observations…');
-      await loadStationData({ acknowledge: true });
+      await loadStationData({ acknowledge: true, forceRefresh: true });
       const status = el('feed-status').textContent;
       showToast(status === 'Live data' ? 'Weather data is up to date' : `${status} available`);
     });
@@ -672,7 +727,7 @@
   function init() {
     const theme = readStorage('isobar-theme', 'light'); document.documentElement.dataset.theme = theme;
     el('theme-toggle').setAttribute('aria-label', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
-    restoreMetricOrder(); renderConditionMetrics(); renderMetricCustomization(); renderStationMenu(); bindEvents(); renderRangeSelection(); renderCurrent(); renderChart(); setupSpotlight(); loadStationData(); loadStationList();
+    restoreMetricOrder(); renderConditionMetrics(); renderMetricCustomization(); renderStationMenu(); bindEvents(); renderRangeSelection(); renderCurrent(); renderChart(); loadStationData(); loadStationList();
     window.requestAnimationFrame(() => {
       const search = el('station-search');
       search.focus({ preventScroll: true });
@@ -680,7 +735,7 @@
       closeStationMenu();
     });
     window.setInterval(() => { el('local-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }, 30000);
-    window.setInterval(loadStationData, 10 * 60 * 1000);
+    window.setInterval(checkForNewObservation, 30 * 1000);
   }
   init();
 })();
