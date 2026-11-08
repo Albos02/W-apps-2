@@ -258,7 +258,12 @@ export function createWeatherClient(fetch = globalThis.fetch, now = Date.now) {
   const cache = new Map();
   const cacheVersions = new Map();
 
-  async function fetchCSV(station, suffix, { bypassCache = false } = {}) {
+  async function fetchCSV(
+    station,
+    suffix,
+    { bypassCache = false, signal } = {},
+  ) {
+    signal?.throwIfAborted();
     const key = `${station.code}:${suffix}`;
     const version = cacheVersions.get(station.code) || 0;
     const cached = cache.get(key);
@@ -267,11 +272,12 @@ export function createWeatherClient(fetch = globalThis.fetch, now = Date.now) {
     const code = station.code.toLowerCase();
     const response = await fetch(
       `https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/${code}/ogd-smn_${code}_t_${suffix}.csv`,
-      { cache: "no-store", mode: "cors" },
+      { cache: "no-store", mode: "cors", signal },
     );
     if (!response.ok)
       throw new Error(`Weather data request failed (${response.status})`);
     const points = parseCSV(await response.text());
+    signal?.throwIfAborted();
     if (
       !bypassCache &&
       points.length &&

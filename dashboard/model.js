@@ -52,12 +52,18 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
     metricDrag: null,
   };
   let requestId = 0;
+  let stationController;
+  let pollController;
 
   async function loadStationData({
     acknowledge = false,
     forceRefresh = false,
   } = {}) {
     const id = ++requestId;
+    stationController?.abort();
+    pollController?.abort();
+    const controller = new AbortController();
+    stationController = controller;
     const station = state.station;
     if (forceRefresh) client.clearStationFeedCache(station.code);
     Object.assign(state, {
@@ -71,8 +77,8 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
     });
     onChange();
     const results = await Promise.allSettled([
-      client.fetchCSV(station, "now"),
-      client.fetchCSV(station, "recent"),
+      client.fetchCSV(station, "now", { signal: controller.signal }),
+      client.fetchCSV(station, "recent", { signal: controller.signal }),
     ]);
     if (id !== requestId) return;
     const [currentPoints, historyPoints] = results.map((result) =>
@@ -129,13 +135,19 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
   }
 
   async function checkForNewObservation() {
+    if (state.isRefreshing) return;
+    pollController?.abort();
+    const controller = new AbortController();
+    pollController = controller;
     const station = state.station;
     const id = requestId;
     try {
       const points = await client.fetchCSV(station, "now", {
         bypassCache: true,
+        signal: controller.signal,
       });
       if (
+        controller.signal.aborted ||
         id !== requestId ||
         state.isRefreshing ||
         station.code !== state.station.code

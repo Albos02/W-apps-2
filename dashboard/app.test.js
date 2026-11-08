@@ -318,3 +318,37 @@ test("ignores a poll completed after switching stations", async () => {
   assert.equal(state.station.code, "BER");
   assert.equal(state.newReadingAvailable, false);
 });
+
+test("aborts superseded station requests and polls", async () => {
+  const pending = [];
+  const dashboard = app(
+    (url, { signal }) =>
+      new Promise((resolve, reject) => {
+        pending.push({ url, signal, resolve });
+        signal.addEventListener("abort", () => reject(signal.reason), {
+          once: true,
+        });
+      }),
+  );
+  const first = dashboard.loadStationData();
+  const second = dashboard.selectStation("BER");
+  assert.ok(pending.slice(0, 2).every(({ signal }) => signal.aborted));
+  for (const request of pending.slice(2))
+    request.resolve({ ok: true, text: async () => csv("BER", 4.5) });
+  await Promise.all([first, second]);
+  assert.equal(dashboard.state.feedStatus, "Live data");
+
+  const poll = dashboard.checkForNewObservation();
+  const newerPoll = dashboard.checkForNewObservation();
+  assert.equal(pending[4].signal.aborted, true);
+  const refresh = dashboard.loadStationData({ forceRefresh: true });
+  assert.equal(pending[5].signal.aborted, true);
+  // Polling during a refresh must not start another background request.
+  await dashboard.checkForNewObservation();
+  assert.equal(pending.length, 8);
+  for (const request of pending.slice(6))
+    request.resolve({ ok: true, text: async () => csv("BER", 8) });
+  await Promise.all([poll, newerPoll, refresh]);
+  assert.equal(dashboard.state.current.temp, 8);
+  assert.equal(dashboard.state.isRefreshing, false);
+});

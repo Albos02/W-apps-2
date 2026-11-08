@@ -157,3 +157,27 @@ test("CSV export preserves zeroes and escapes labels", () => {
     '"timestamp","source","Rain ""total""","Wind"\n"2026-11-08T10:00:00.000Z","MeteoSwiss","0",""',
   );
 });
+
+test("aborted responses cannot populate the feed cache", async () => {
+  const controller = new AbortController();
+  let requests = 0;
+  const client = createWeatherClient(async (_url, { signal }) => {
+    requests++;
+    return {
+      ok: true,
+      text: async () => {
+        if (requests === 1) {
+          assert.equal(signal, controller.signal);
+          controller.abort();
+        }
+        return "reference_timestamp;tre200s0\n08.11.2026 10:00;4.5";
+      },
+    };
+  });
+  await assert.rejects(
+    client.fetchCSV(stations[0], "now", { signal: controller.signal }),
+    { name: "AbortError" },
+  );
+  await client.fetchCSV(stations[0], "now");
+  assert.equal(requests, 2);
+});

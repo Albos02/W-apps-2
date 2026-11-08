@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test dashboard/*.test.js",
+    "test": "node --test",
     "format": "prettier --write dashboard package.json",
     "format:check": "prettier --check dashboard package.json"
   },
