@@ -126,7 +126,13 @@ export const metricGroups = [
     fields: [
       { key: "wind", label: "Avrg wind", color: "#df9757", unit: " km/h" },
       { key: "gust", label: "Wind gusts", color: "#cf675d", unit: " km/h" },
-      { key: "direction", label: "Wind dir", color: "#87918a", unit: "°" },
+      {
+        key: "direction",
+        label: "Wind dir",
+        color: "#87918a",
+        unit: "°",
+        change: "circular",
+      },
     ],
   },
   {
@@ -172,7 +178,13 @@ export const metricGroups = [
     color: "#5f8eba",
     bg: "#ebf1f7",
     fields: [
-      { key: "rain", label: "Precipitation", color: "#5487b3", unit: " mm" },
+      {
+        key: "rain",
+        label: "Precipitation",
+        color: "#5487b3",
+        unit: " mm",
+        change: "sum",
+      },
     ],
   },
   {
@@ -188,6 +200,7 @@ export const metricGroups = [
         label: "Sunshine duration",
         color: "#d2a34e",
         unit: " min",
+        change: "sum",
       },
     ],
   },

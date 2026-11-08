@@ -1,5 +1,9 @@
 import { RANGE_PRESETS } from "./config.js";
-import { aggregateSeries, filterHistoryForRange } from "./weather.js";
+import {
+  aggregateSeries,
+  filterHistoryForRange,
+  summarizeSeries,
+} from "./weather.js";
 import {
   esc,
   formatValue,
@@ -134,9 +138,11 @@ export function createChartView(
   function render() {
     const group = selectedGroup();
     const fields = group.fields;
-    let data = filterHistoryForRange(state.history, state.range);
+    const rawData = filterHistoryForRange(state.history, state.range);
     const aggregation = RANGE_PRESETS[state.range].aggregation;
-    if (aggregation) data = aggregateSeries(data, group, aggregation);
+    const data = aggregation
+      ? aggregateSeries(rawData, group, aggregation)
+      : rawData;
     state.displayData = data;
     if (state.chartPoint >= data.length) state.chartPoint = -1;
     svg.setAttribute("viewBox", `0 0 ${PLOT.width} ${PLOT.height}`);
@@ -234,16 +240,38 @@ export function createChartView(
         return `<span>${esc(label)}</span>`;
       })
       .join("");
-    const first = data[0].values[fields[0].key],
-      last = data.at(-1).values[fields[0].key];
-    const delta =
-      Number.isFinite(first) && Number.isFinite(last) ? last - first : NaN;
+    const last = data.at(-1).values[fields[0].key];
+    const change = summarizeSeries(fields[0], data, rawData);
+    const changeMode = fields[0].change || "delta";
     el("chart-current-value").textContent = formatValue(fields[0], last);
-    el("chart-change").innerHTML = Number.isFinite(delta)
-      ? `${delta >= 0 ? "↗" : "↘"} ${esc(formatValue(fields[0], Math.abs(delta)))} <small>in shown data</small>`
-      : "";
-    el("chart-change").style.color =
-      delta >= 0 ? "var(--accent)" : "var(--muted)";
+    if (Number.isFinite(change)) {
+      const arrow =
+        changeMode === "circular"
+          ? change > 0
+            ? "↻"
+            : change < 0
+              ? "↺"
+              : "→"
+          : change >= 0
+            ? "↗"
+            : "↘";
+      const value =
+        changeMode === "sum"
+          ? `${esc(formatValue(fields[0], change))} total`
+          : `${arrow} ${esc(formatValue(fields[0], Math.abs(change)))}`;
+      el("chart-change").innerHTML = `${value} <small>in shown data</small>`;
+      el("chart-change").style.color =
+        changeMode === "sum"
+          ? change > 0
+            ? "var(--accent)"
+            : "var(--muted)"
+          : change >= 0
+            ? "var(--accent)"
+            : "var(--muted)";
+    } else {
+      el("chart-change").innerHTML = "";
+      el("chart-change").style.color = "";
+    }
     el("chart-legend").innerHTML = fields
       .map(
         (field) =>

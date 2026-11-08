@@ -6,6 +6,8 @@ import {
   parseDate,
   mergeObservations,
   filterHistoryForRange,
+  aggregateSeries,
+  summarizeSeries,
   createWeatherClient,
   normalizeStations,
 } from "./weather.js";
@@ -155,6 +157,57 @@ test("CSV export preserves zeroes and escapes labels", () => {
   assert.equal(
     result,
     '"timestamp","source","Rain ""total""","Wind"\n"2026-11-08T10:00:00.000Z","MeteoSwiss","0",""',
+  );
+});
+
+test("rain sums raw observations instead of differencing visible values", () => {
+  const field = { key: "rain", unit: " mm", change: "sum" };
+  const raw = [2, 0, 0].map((rain) => ({ values: { rain } }));
+  assert.equal(summarizeSeries(field, raw, raw), 2);
+});
+
+test("wind direction changes across north use the shorter turn", () => {
+  const field = { key: "direction", unit: "°", change: "circular" };
+  const displayed = [
+    { values: { direction: 350 } },
+    { values: { direction: 10 } },
+  ];
+  assert.equal(summarizeSeries(field, displayed, displayed), 20);
+});
+
+test("aggregated totals come from raw observations, not bucket averages", () => {
+  const field = { key: "rain", unit: " mm", change: "sum" };
+  const group = { fields: [field] };
+  const start = parseDate("202611081000").getTime();
+  const raw = [1, 3, 0, 4].map((rain, index) => ({
+    date: new Date(start + index * 3600000),
+    values: { rain },
+  }));
+  const displayed = aggregateSeries(raw, group, "twoHours");
+  assert.deepEqual(
+    displayed.map((point) => point.values.rain),
+    [2, 2],
+  );
+  assert.equal(summarizeSeries(field, displayed, raw), 8);
+});
+
+test("series without usable endpoints have no summary", () => {
+  const point = (values) => ({ values });
+  assert.equal(
+    summarizeSeries({ key: "temp" }, [point({}), point({ temp: 3 })], []),
+    null,
+  );
+  assert.equal(
+    summarizeSeries(
+      { key: "direction", change: "circular" },
+      [point({ direction: 10 }), point({})],
+      [],
+    ),
+    null,
+  );
+  assert.equal(
+    summarizeSeries({ key: "rain", change: "sum" }, [point({})], [point({})]),
+    null,
   );
 });
 

@@ -159,6 +159,26 @@ export function aggregateSeries(data, group, aggregation) {
   });
 }
 
+export function summarizeSeries(field, displayed, raw) {
+  const mode = field.change || "delta";
+  if (mode === "sum") {
+    let total = 0;
+    let count = 0;
+    for (const point of raw || []) {
+      const value = point.values[field.key];
+      if (!Number.isFinite(value)) continue;
+      total += value;
+      count++;
+    }
+    return count ? total : null;
+  }
+  const first = displayed[0]?.values[field.key];
+  const last = displayed.at(-1)?.values[field.key];
+  if (!Number.isFinite(first) || !Number.isFinite(last)) return null;
+  if (mode === "circular") return ((last - first + 540) % 360) - 180;
+  return last - first;
+}
+
 export function metricTrendForField(field, history, current) {
   const key = field.key;
   const points = (history || []).filter(
