@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f6f2" />
+    <meta name="description" content="Live weather observations from MeteoSwiss stations across Switzerland." />
+    <title>Isobar — Swiss weather, right now</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="Isobar home">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>isobar<span class="brand-period">.</span></span>
+        </a>
+        <nav class="top-nav" aria-label="Main navigation">
+          <a class="nav-link active" href="#overview">Overview</a>
+          <a class="nav-link" href="#history">Archive <span class="nav-arrow">↗</span></a>
+          <a class="nav-link" href="#about">About</a>
+        </nav>
+        <div class="top-actions">
+          <span class="live-status"><span class="live-dot"></span><span id="feed-status">Connecting</span></span>
+          <button class="icon-button theme-toggle" id="theme-toggle" aria-label="Switch to dark theme" title="Toggle theme">
+            <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.1 15.4A8.5 8.5 0 0 1 8.6 3.9 8.6 8.6 0 1 0 20.1 15.4Z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <main id="top">
+        <section class="intro" id="overview">
+          <div class="intro-copy">
+            <p class="eyebrow"><span class="eyebrow-line"></span> SWITZERLAND · LIVE OBSERVATIONS</p>
+            <h1>Weather, <span>without<br class="desktop-break" /> the guesswork.</span></h1>
+            <p class="intro-description">A closer look at what's happening outside, measured<br class="desktop-break" /> across Switzerland every ten minutes.</p>
+          </div>
+          <div class="station-picker-wrap">
+            <label class="field-label" for="station-search">WEATHER STATION</label>
+            <div class="station-picker" id="station-picker">
+              <svg class="pin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              <input id="station-search" type="search" value="Pully" autocomplete="off" placeholder="Search a station..." aria-label="Search weather stations" />
+              <kbd>⌘ K</kbd>
+              <button class="picker-chevron" id="picker-toggle" aria-label="Show stations"><svg viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5"/></svg></button>
+              <div class="station-menu" id="station-menu" role="listbox" aria-label="Weather stations"></div>
+            </div>
+            <div class="station-meta"><span class="station-coordinates" id="station-coordinates">46.51° N &nbsp; 6.67° E</span><button class="favorite-button" id="favorite-toggle"><span class="star">☆</span> <span id="favorite-label">Add to favorites</span></button></div>
+          </div>
+        </section>
+
+        <section class="current-card" aria-label="Current conditions">
+          <div class="current-main">
+            <div class="current-heading">
+              <div><p class="eyebrow small-eyebrow">CURRENT CONDITIONS <span class="update-dot"></span></p><h2 id="current-station">Pully</h2></div>
+              <span class="local-time" id="local-time">—</span>
+            </div>
+            <div class="weather-summary">
+              <div class="temperature-lockup"><span class="temperature-value" id="current-temperature">18.4</span><span class="temperature-unit">°</span></div>
+              <div class="weather-details"><div class="weather-icon" id="weather-icon" aria-hidden="true"><svg viewBox="0 0 80 66"><circle class="sun" cx="51" cy="25" r="14"/><path class="cloud" d="M17 53h43a11 11 0 0 0 0-22 16 16 0 0 0-31-2 12 12 0 0 0-12 24Z"/></svg></div><span id="weather-description">Partly cloudy</span></div>
+            </div>
+            <div class="current-footer"><span><span class="footer-marker"></span> Elevation <strong id="station-elevation">456 m</strong></span><span class="footer-divider"></span><span>Last reading <strong id="last-reading">—</strong></span></div>
+          </div>
+          <div class="condition-grid" id="condition-grid">
+            <div class="condition-item"><span class="condition-icon wind-icon">↗</span><span class="condition-label">Wind</span><strong id="current-wind">8.6 <small>km/h</small></strong><span class="condition-note" id="wind-direction">SW · light breeze</span></div>
+            <div class="condition-item"><span class="condition-icon humidity-icon">％</span><span class="condition-label">Humidity</span><strong id="current-humidity">64<small>%</small></strong><span class="condition-note">Relative humidity</span></div>
+            <div class="condition-item"><span class="condition-icon rain-icon">◒</span><span class="condition-label">Precipitation</span><strong id="current-rain">0.0<small> mm</small></strong><span class="condition-note">Last 10 minutes</span></div>
+            <div class="condition-item"><span class="condition-icon pressure-icon">⌁</span><span class="condition-label">Pressure</span><strong id="current-pressure">1018<small> hPa</small></strong><span class="condition-note">At sea level</span></div>
+          </div>
+        </section>
+
+        <section class="observations-section" id="history">
+          <div class="section-heading">
+            <div><p class="eyebrow section-kicker">THE LAST 24 HOURS</p><h2>Station observations<span class="heading-period">.</span></h2></div>
+            <div class="range-tabs" role="group" aria-label="Chart time range">
+              <button class="range-tab active" data-range="24h">24 hours</button><button class="range-tab" data-range="7d">7 days</button><button class="range-tab" data-range="30d">30 days</button>
+            </div>
+          </div>
+          <div class="dashboard-grid">
+            <article class="chart-card">
+              <div class="chart-topline"><div><span class="chart-caption" id="chart-caption">TEMPERATURE</span><div class="chart-current"><strong id="chart-current-value">18.4°</strong><span class="chart-change" id="chart-change">↗ 2.1° <small>today</small></span></div></div><button class="more-button" id="refresh-data" aria-label="Refresh weather data" title="Refresh weather data">↻</button></div>
+              <div class="chart-legend" id="chart-legend"></div>
+              <div class="chart-wrap" id="chart-wrap"><svg class="weather-chart" id="weather-chart" role="img" aria-label="Temperature observations over time"></svg><div class="chart-tooltip" id="chart-tooltip"></div></div>
+              <div class="chart-axis-labels" id="chart-axis-labels"></div>
+            </article>
+            <aside class="metrics-card">
+              <div class="metrics-heading"><div><p class="chart-caption">EXPLORE BY METRIC</p><p class="metrics-subtitle">Choose a view</p></div><span class="drag-hint">↕ &nbsp;drag to reorder</span></div>
+              <div class="metric-list" id="metric-list" aria-label="Metric groups"></div>
+              <p class="metric-footnote"><span>✳</span> Station data refreshes every 10 minutes</p>
+            </aside>
+          </div>
+        </section>
+
+        <section class="readings-section">
+          <div class="readings-heading"><div><p class="chart-caption">RECENT READINGS</p><h3>Every observation, in detail.</h3></div><button class="download-button" id="download-csv"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v10m0 0 4-4m-4 4L6 8M3 14v3h14v-3"/></svg> Download CSV</button></div>
+          <div class="table-scroll"><table><thead id="readings-head"></thead><tbody id="readings-body"></tbody></table></div>
+          <div class="table-footer"><span id="table-summary">Showing the latest observations</span><span>Source: <strong id="data-source">Sample observations</strong></span></div>
+        </section>
+      </main>
+      <footer class="footer" id="about"><a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>isobar<span class="brand-period">.</span></span></a><span>Weather data, made a little more human.</span><span class="footer-right">Built with open data <span>✳</span> Switzerland</span></footer>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
