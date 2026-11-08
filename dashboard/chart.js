@@ -52,8 +52,18 @@ export function createChartView(
   svg.addEventListener("mousemove", (event) => {
     const point = state.displayData[pointAt(event)];
     if (!point) return;
-    const field = selectedGroup().fields[0];
-    tooltip.textContent = `${point.date.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })} · ${formatValue(field, point.values[field.key])}`;
+    const time = point.date.toLocaleString([], {
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const values = selectedGroup()
+      .fields.map(
+        (field) =>
+          `${esc(field.label)} ${esc(formatValue(field, point.values[field.key]))}`,
+      )
+      .join("<br>");
+    tooltip.innerHTML = `${esc(time)}<br>${values}`;
     tooltip.style.left = `${event.clientX - el("chart-wrap").getBoundingClientRect().left}px`;
     tooltip.style.top = "45px";
     tooltip.hidden = false;

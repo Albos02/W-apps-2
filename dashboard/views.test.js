@@ -88,6 +88,18 @@ test("chart transitions between waiting, data, missing metrics, and recovery", (
   assert.equal(f.el("readings-body").querySelectorAll("tr").length, 1);
 });
 
+test("chart tooltip shows a value for every plotted field", (t) => {
+  const f = fixture(t, "wind");
+  f.state.history = readings();
+  const view = createChartView(f.state, f.groups, f);
+  view.render();
+  f.el("weather-chart").dispatch("mousemove", { clientX: 38 });
+  const text = f.el("chart-tooltip").textContent;
+  assert.match(text, /Avrg wind 12\.6 km\/h/);
+  assert.match(text, /Wind gusts 21\.8 km\/h/);
+  assert.match(text, /Wind dir 350°/);
+});
+
 test("chart and table clicks highlight the matching chronological point", (t) => {
   const f = fixture(t);
   f.state.history = readings();
