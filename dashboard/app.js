@@ -261,7 +261,10 @@
     state.displayData = data;
   }
   function formatTick(value, field) { return `${Math.round(value * 10) / 10}${field.unit === '°' ? '°' : ''}`; }
-  function formatValue(field, value) { if (!Number.isFinite(value)) return '—'; const places = Math.abs(value) < 10 && field.key !== 'direction' ? 1 : 0; return `${value.toFixed(places)}${field.unit}`; }
+  function formatNumber(field, value) { if (!Number.isFinite(value)) return '—'; const places = Math.abs(value) < 10 && field.key !== 'direction' ? 1 : 0; return value.toFixed(places); }
+  function formatValue(field, value) { return Number.isFinite(value) ? `${formatNumber(field, value)}${field.unit}` : '—'; }
+  function tableUnit(field) { return ['temp', 'dewpoint'].includes(field.key) ? '°C' : field.unit.trim(); }
+  function formatTableValue(field, value) { const number = formatNumber(field, value); return Number.isFinite(value) && field.unit.trim() === '°' ? `${number}°` : number; }
   function aggregateSeries(data, count, group) {
     return Array.from({ length: count }, (_, bucket) => {
       const start = Math.floor(bucket * data.length / count);
@@ -292,16 +295,17 @@
     };
     svg.onmouseleave = () => { tooltip.style.display = 'none'; };
     svg.onclick = (event) => {
-      const rect = svg.getBoundingClientRect(); const px = (event.clientX - rect.left) / rect.width * 700; state.chartPoint = Math.max(0, Math.min(data.length - 1, Math.round((px - left) / plotWidth * (data.length - 1)))); renderChart();
+      const rect = svg.getBoundingClientRect(); const px = (event.clientX - rect.left) / rect.width * 700; state.chartPoint = Math.max(0, Math.min(data.length - 1, Math.round((px - left) / plotWidth * (data.length - 1)))); state.selectedRow = data.length - 1 - state.chartPoint; renderChart();
+      el('readings-body').querySelector('tr.highlighted')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     };
   }
 
   function renderReadings() {
-    const group = metricGroups.find((item) => item.id === state.group); const data = (state.displayData || []).slice(-7).reverse();
+    const group = metricGroups.find((item) => item.id === state.group); const data = (state.displayData || []).slice().reverse();
     const animate = state.animateReadings;
-    const headers = ['Observation time', ...group.fields.map((field) => field.label)];
+    const headers = ['Observation time', ...group.fields.map((field) => `${field.label} (${tableUnit(field)})`)];
     el('readings-head').innerHTML = `<tr>${headers.map((header) => `<th>${esc(header)}</th>`).join('')}</tr>`;
-    el('readings-body').innerHTML = data.map((point, index) => `<tr data-point="${state.displayData.length - 1 - index}" class="${state.selectedRow === index ? 'highlighted ' : ''}${animate ? 'reading-enter' : ''}" ${animate ? `style="--reading-delay:${index * 45}ms"` : ''}><td>${point.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} &nbsp; ${point.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>${group.fields.map((field) => `<td><strong>${esc(formatValue(field, point.values[field.key]))}</strong></td>`).join('')}</tr>`).join('');
+    el('readings-body').innerHTML = data.map((point, index) => `<tr data-point="${state.displayData.length - 1 - index}" class="${state.selectedRow === index ? 'highlighted ' : ''}${animate ? 'reading-enter' : ''}" ${animate ? `style="--reading-delay:${index * 45}ms"` : ''}><td>${point.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} &nbsp; ${point.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>${group.fields.map((field) => `<td><strong>${esc(formatTableValue(field, point.values[field.key]))}</strong></td>`).join('')}</tr>`).join('');
     state.animateReadings = false;
     el('readings-body').querySelectorAll('tr').forEach((row, index) => row.addEventListener('click', () => { state.selectedRow = index; state.chartPoint = Number(row.dataset.point); renderChart(); renderReadings(); }));
     el('table-summary').textContent = data.length ? `Showing ${data.length} recent chart points · ${state.station.name}` : `No ${group.name.toLowerCase()} readings available for ${state.station.name}`;
