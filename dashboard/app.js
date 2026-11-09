@@ -474,9 +474,17 @@ export function createApp({
     const primary = primaryGroup();
     const field = primary.fields[0];
     el("current-station").textContent = station?.name || "Choose a station";
-    el("station-coordinates").textContent = station
+    const coordinates = el("station-coordinates");
+    coordinates.textContent = station
       ? `${station.lat.toFixed(2)}° N   ${station.lon.toFixed(2)}° E`
       : "—";
+    if (station) {
+      coordinates.href = `../maps/?station=${encodeURIComponent(station.code)}`;
+      coordinates.setAttribute("aria-label", `View ${station.name} on the map`);
+    } else {
+      coordinates.removeAttribute("href");
+      coordinates.removeAttribute("aria-label");
+    }
     el("station-elevation").textContent = Number.isFinite(station?.elevation)
       ? `${station.elevation} m`
       : "—";

@@ -177,9 +177,23 @@ function initializeMap() {
   return true;
 }
 
+function codeFromUrl() {
+  try {
+    return (
+      new URLSearchParams(window.location.search)
+        .get("station")
+        ?.toUpperCase() || ""
+    );
+  } catch {
+    return "";
+  }
+}
+
 async function init() {
   bindThemeToggle({ document, button: themeToggle, preferences });
   const mapAvailable = initializeMap();
+  const requestedCode = codeFromUrl();
+  if (requestedCode) selectedCode = requestedCode;
   const preferredCode = selectedCode;
   stations = [...fallbackStations];
   selectedCode = stations.some((station) => station.code === preferredCode)

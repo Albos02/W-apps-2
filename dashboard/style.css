@@ -400,6 +400,15 @@ button:disabled {
 .station-coordinates {
   color: var(--faint);
   font: 10px var(--mono);
+  text-decoration: none;
+}
+.station-coordinates[href] {
+  cursor: pointer;
+}
+.station-coordinates[href]:hover,
+.station-coordinates[href]:focus-visible {
+  color: var(--accent, currentColor);
+  text-decoration: underline;
 }
 .favorite-button {
   display: inline-flex;
