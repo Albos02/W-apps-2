@@ -41,6 +41,7 @@ export function createApp({
     metricGroups.find((group) => !state.hiddenGroups.has(group.id));
   let toastTimer;
   let placeSearchTimer;
+  let syncedStationName;
 
   function showToast(message) {
     el("app-toast").textContent = message;
@@ -58,8 +59,11 @@ export function createApp({
       "offline",
       !["Connecting", "Live data"].includes(state.feedStatus),
     );
-    if (document.activeElement !== el("station-search"))
-      el("station-search").value = state.station?.name || "";
+    const search = el("station-search");
+    const stationName = state.station?.name || "";
+    if (document.activeElement !== search || search.value === syncedStationName)
+      search.value = stationName;
+    syncedStationName = stationName;
     renderStationMenu();
     renderCurrent();
     renderChart();

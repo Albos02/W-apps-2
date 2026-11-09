@@ -314,6 +314,27 @@ test("a station URL argument takes precedence over the current recent station", 
   assert.equal(selectedCode, "BER");
 });
 
+test("search field follows the current station when it changes while focused", (t) => {
+  const f = fixture(t);
+  f.dashboard.loadStationData = () => {};
+  f.dashboard.loadStationList = () => {};
+  const app = createApp({ ...f, dashboard: f.dashboard });
+  app.init();
+  const search = f.el("station-search");
+  f.state.station = f.state.stationOptions.find(
+    (station) => station.code === "PUY",
+  );
+  app.render();
+  assert.equal(search.value, "Pully");
+  search.focus();
+  f.state.station = f.state.stationOptions.find(
+    (station) => station.code === "BER",
+  );
+  app.render();
+  assert.equal(search.value, "Bern / Zollikofen");
+  assert.equal(f.el("current-station").textContent, search.value);
+});
+
 test("selecting a station from search removes the station URL argument", (t) => {
   const f = fixture(t);
   f.window.location = {
