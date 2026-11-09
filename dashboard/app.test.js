@@ -2,13 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createDashboard } from "./model.js";
-import { stations } from "./config.js";
+import { stations } from "../config.js";
 import {
   parseCSV,
   parseDate,
   aggregateSeries,
   filterHistoryForRange,
-} from "./weather.js";
+} from "../weather.js";
 
 function app(fetch, stored = {}) {
   return createDashboard({

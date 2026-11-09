@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { bindThemeToggle } from "./site.js";
+import { bindThemeToggle } from "../site.js";
 
 test("shared theme toggle restores and persists the selected theme", () => {
   const document = { documentElement: { dataset: {} } };

@@ -1,8 +1,8 @@
-import { createStorage } from "../dashboard/storage.js";
-import { createWeatherClient } from "../dashboard/weather.js";
-import { stations as fallbackStations } from "../dashboard/config.js";
-import { esc, normalizeSearchText } from "../dashboard/format.js";
-import { bindThemeToggle } from "../dashboard/site.js";
+import { createStorage } from "../storage.js";
+import { createWeatherClient } from "../weather.js";
+import { stations as fallbackStations } from "../config.js";
+import { esc, normalizeSearchText } from "../format.js";
+import { bindThemeToggle } from "../site.js";
 
 const mapElement = document.getElementById("station-map");
 const list = document.getElementById("station-list");

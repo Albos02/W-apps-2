@@ -24,20 +24,27 @@ Run `npm run format` to format the website. Tests use Node's built-in test runne
 
 ## Structure
 
+Dashboard-only modules live under `dashboard/`:
+
 | File         | Responsibility                                                                     |
 | ------------ | ---------------------------------------------------------------------------------- |
 | `app.js`     | Browser startup, current conditions, station/metric controls, and event handling   |
 | `model.js`   | Application state, preference restoration, station loading, geocoding, and polling |
-| `weather.js` | CSV/date parsing, station normalization, proximity, feed caching, and trends       |
 | `geocode.js` | Swiss place search and result normalization                                        |
 | `chart.js`   | SVG chart, tooltip, linked readings table, and CSV download                        |
-| `config.js`  | Metric definitions, API parameter aliases, ranges, and fallback stations           |
-| `storage.js` | Validated preference reads and best-effort writes                                  |
-| `site.js`    | Shared theme toggle and persistence for website pages                              |
-| `format.js`  | Escaping, search normalization, measurement formatting, and CSV serialization      |
 | `style.css`  | Theme tokens, component styles, and consolidated responsive layouts                |
 
-The `/maps/` page shares the dashboard's station index loader and fallback list, normalized station records, theme controls, search normalization, HTML escaping, and browser preferences. Its selected station and light/dark theme are the same saved preferences used by the dashboard.
+Modules shared by the dashboard and map live at the repository root:
+
+| File         | Responsibility                                                                |
+| ------------ | ----------------------------------------------------------------------------- |
+| `weather.js` | CSV/date parsing, station normalization, proximity, feed caching, and trends  |
+| `config.js`  | Metric definitions, API parameter aliases, ranges, and fallback stations      |
+| `storage.js` | Validated preference reads and best-effort writes                             |
+| `site.js`    | Shared theme toggle and persistence for website pages                         |
+| `format.js`  | Escaping, search normalization, measurement formatting, and CSV serialization |
+
+The `/maps/` page shares the root station index loader and fallback list, normalized station records, theme controls, search normalization, HTML escaping, and browser preferences. Its selected station and light/dark theme are the same saved preferences used by the dashboard.
 
 ## Data behavior
 

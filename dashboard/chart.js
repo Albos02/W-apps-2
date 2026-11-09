@@ -1,16 +1,16 @@
-import { RANGE_PRESETS } from "./config.js";
+import { RANGE_PRESETS } from "../config.js";
 import {
   aggregateSeries,
   filterHistoryForRange,
   summarizeSeries,
-} from "./weather.js";
+} from "../weather.js";
 import {
   esc,
   formatValue,
   formatTableValue,
   tableUnit,
   observationsCSV,
-} from "./format.js";
+} from "../format.js";
 
 const PLOT = {
   width: 700,

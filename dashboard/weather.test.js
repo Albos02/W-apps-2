@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { FEED_CACHE_TTL, stations } from "./config.js";
+import { FEED_CACHE_TTL, stations } from "../config.js";
 import {
   parseCSV,
   parseDate,
@@ -12,8 +12,8 @@ import {
   normalizeStations,
   distanceKm,
   nearestStations,
-} from "./weather.js";
-import { observationsCSV } from "./format.js";
+} from "../weather.js";
+import { observationsCSV } from "../format.js";
 
 test("parses quoted CSV cells, decimal commas, zeroes, and byte-order marks", () => {
   const [point] = parseCSV(

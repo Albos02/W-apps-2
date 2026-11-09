@@ -21,14 +21,14 @@ Serve the repository root over HTTP and open /dashboard/ or /maps/.
 
 - dashboard/app.js: browser startup, controls, and current-condition rendering.
 - dashboard/model.js: application state and asynchronous loading lifecycle.
-- dashboard/weather.js: parsing, normalization, caching, merging, and calculations.
+- weather.js: parsing, normalization, caching, merging, and calculations (shared).
 - dashboard/chart.js: SVG rendering, chart interaction, table, and CSV download.
-- dashboard/config.js: fallback stations, metrics, parameter aliases, time ranges.
-- dashboard/storage.js: validated preference reads and best-effort writes.
-- dashboard/site.js: shared site theme behavior used by the dashboard and map.
-- dashboard/format.js: shared display and CSV formatting.
+- config.js: fallback stations, metrics, parameter aliases, time ranges (shared).
+- storage.js: validated preference reads and best-effort writes (shared).
+- site.js: shared site theme behavior used by the dashboard and map.
+- format.js: shared display and CSV formatting.
 - dashboard/style.css: theme tokens, component styles, responsive rules.
-- maps/: searchable station map, reusing dashboard station, storage, theme, and text utilities.
+- maps/: searchable station map, reusing the shared station, storage, theme, and text utilities.
 
 ## Data sources
 

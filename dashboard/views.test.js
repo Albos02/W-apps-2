@@ -5,7 +5,7 @@ import { createDOM } from "./test-support/dom.js";
 import { createApp } from "./app.js";
 import { createChartView } from "./chart.js";
 import { createDashboard } from "./model.js";
-import { formatNumber } from "./format.js";
+import { formatNumber } from "../format.js";
 
 const html = readFileSync(new URL("./index.html", import.meta.url), "utf8");
 function fixture(t, group = "temperature") {

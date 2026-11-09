@@ -1,4 +1,4 @@
-import { RANGE_PRESETS, OBSERVATION_POLL_INTERVAL } from "./config.js";
+import { RANGE_PRESETS, OBSERVATION_POLL_INTERVAL } from "../config.js";
 import { createDashboard } from "./model.js";
 import { createChartView } from "./chart.js";
 import {
@@ -7,8 +7,8 @@ import {
   formatValue,
   directionText,
   normalizeSearchText,
-} from "./format.js";
-import { bindThemeToggle } from "./site.js";
+} from "../format.js";
+import { bindThemeToggle } from "../site.js";
 
 export function createApp({
   document = globalThis.document,

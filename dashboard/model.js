@@ -2,8 +2,8 @@ import {
   stations,
   metricGroups as defaultGroups,
   RANGE_PRESETS,
-} from "./config.js";
-import { createStorage } from "./storage.js";
+} from "../config.js";
+import { createStorage } from "../storage.js";
 import { createGeocodeClient } from "./geocode.js";
 import {
   createWeatherClient,
@@ -11,7 +11,7 @@ import {
   mergeObservations,
   metricTrendForField,
   nearestStations,
-} from "./weather.js";
+} from "../weather.js";
 
 const PLACE_CLUSTER_DISTANCE_KM = 5;
 const CONFIDENT_PLACE_SCORE = 90;
