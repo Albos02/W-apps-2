@@ -4,6 +4,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f8f8f8" />
+    <script>
+      (function () {
+        var theme = "light";
+        try {
+          theme = JSON.parse(localStorage.getItem("isobar-theme")) || "light";
+        } catch (e) {}
+        var dark = theme === "dark";
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document
+          .querySelector('meta[name="theme-color"]')
+          .setAttribute("content", dark ? "#121212" : "#f8f8f8");
+      })();
+    </script>
     <meta
       name="description"
       content="Live weather observations from MeteoSwiss stations across Switzerland."
