@@ -352,3 +352,95 @@ test("aborts superseded station requests and polls", async () => {
   assert.equal(dashboard.state.current.temp, 8);
   assert.equal(dashboard.state.isRefreshing, false);
 });
+
+test("geocoding cancels stale requests and station selection clears nearby places", async () => {
+  const pending = [];
+  const dashboard = app((url, { signal } = {}) => {
+    if (url.includes("SearchServer"))
+      return new Promise((resolve, reject) => {
+        pending.push({ signal, resolve });
+        signal.addEventListener("abort", () => reject(signal.reason), {
+          once: true,
+        });
+      });
+    return Promise.resolve({ ok: true, text: async () => "" });
+  });
+  dashboard.loadStationData = async () => {};
+  const staleSearch = dashboard.searchPlace("First place");
+  const currentSearch = dashboard.searchPlace("Second place");
+  assert.equal(pending[0].signal.aborted, true);
+  pending[1].resolve({
+    ok: true,
+    json: async () => ({
+      results: [
+        {
+          attrs: {
+            label: "Second place",
+            detail: "ZH",
+            lat: 47.45,
+            lon: 8.56,
+          },
+        },
+      ],
+    }),
+  });
+  await Promise.all([staleSearch, currentSearch]);
+  assert.equal(dashboard.state.placeOptions[0].label, "Second place");
+  assert.equal(dashboard.state.selectedPlace.label, "Second place");
+  assert.ok(dashboard.state.nearbyStations.length);
+  assert.equal(dashboard.state.nearbyPlaces.length, 1);
+  dashboard.selectPlace(0);
+  assert.ok(dashboard.state.nearbyStations.length);
+  await dashboard.selectStation("BER");
+  assert.equal(dashboard.state.selectedPlace, null);
+  assert.deepEqual(dashboard.state.placeOptions, []);
+  assert.deepEqual(dashboard.state.nearbyStations, []);
+  assert.deepEqual(dashboard.state.nearbyPlaces, []);
+});
+
+test("groups nearby duplicate place results and offers far-apart ambiguities", async () => {
+  const dashboard = app(async () => ({
+    ok: true,
+    json: async () => ({
+      results: [
+        {
+          attrs: {
+            label: "Buchs (SG)",
+            detail: "Buchs SG",
+            lat: 47.1667,
+            lon: 9.4667,
+          },
+        },
+        {
+          attrs: {
+            label: "Populated Place Buchs (SG) - Buchs",
+            detail: "Buchs SG",
+            lat: 47.167,
+            lon: 9.467,
+          },
+        },
+        {
+          attrs: {
+            label: "Buchs (AG)",
+            detail: "Buchs AG",
+            lat: 47.3933,
+            lon: 8.1858,
+          },
+        },
+      ],
+    }),
+  }));
+
+  await dashboard.searchPlace("Buchs");
+
+  assert.deepEqual(
+    dashboard.state.placeOptions.map((place) => place.label),
+    ["Buchs (SG)", "Buchs (AG)"],
+  );
+  assert.equal(dashboard.state.nearbyPlaces.length, 2);
+  assert.ok(
+    dashboard.state.nearbyPlaces.every(({ stations }) => stations.length),
+  );
+  assert.equal(dashboard.state.selectedPlace, null);
+  assert.deepEqual(dashboard.state.nearbyStations, []);
+});

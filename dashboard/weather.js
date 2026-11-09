@@ -275,6 +275,45 @@ export function normalizeStations(payload) {
   ];
 }
 
+export function distanceKm(a, b) {
+  const coordinates = [a?.lat, a?.lon, b?.lat, b?.lon];
+  if (
+    coordinates.some(
+      (value) =>
+        value == null || value === "" || !Number.isFinite(Number(value)),
+    ) ||
+    Math.abs(Number(a.lat)) > 90 ||
+    Math.abs(Number(b.lat)) > 90 ||
+    Math.abs(Number(a.lon)) > 180 ||
+    Math.abs(Number(b.lon)) > 180
+  )
+    return null;
+  const radians = (degrees) => (Number(degrees) * Math.PI) / 180;
+  const latA = radians(a.lat);
+  const latB = radians(b.lat);
+  const deltaLat = latB - latA;
+  const deltaLon = radians(b.lon) - radians(a.lon);
+  const haversine = Math.min(
+    1,
+    Math.sin(deltaLat / 2) ** 2 +
+      Math.cos(latA) * Math.cos(latB) * Math.sin(deltaLon / 2) ** 2,
+  );
+  return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+export function nearestStations(stationList, place, limit = 5) {
+  if (!Array.isArray(stationList) || !place) return [];
+  return stationList
+    .map((station) => ({ station, distanceKm: distanceKm(station, place) }))
+    .filter((result) => Number.isFinite(result.distanceKm))
+    .sort(
+      (a, b) =>
+        a.distanceKm - b.distanceKm ||
+        String(a.station.name).localeCompare(String(b.station.name)),
+    )
+    .slice(0, Math.max(0, limit));
+}
+
 export function createWeatherClient(fetch = globalThis.fetch, now = Date.now) {
   const cache = new Map();
   const cacheVersions = new Map();

@@ -229,3 +229,234 @@ test("app renders an added config metric, selects it, and uses shared formatting
   assert.equal(tile.querySelector("strong").textContent, "— km");
   assert.equal(f.el("wind-gust").textContent, "Gusts unavailable");
 });
+
+test("station search tolerates typos, requires every term, and Enter selects the best match", (t) => {
+  const f = fixture(t);
+  const kloten = {
+    code: "KLO",
+    name: "Zürich / Kloten",
+    canton: "ZH",
+    lat: 47.478653,
+    lon: 8.529844,
+    elevation: null,
+  };
+  f.state.stationOptions = [
+    kloten,
+    {
+      code: "ZRH",
+      name: "Zürich",
+      canton: "ZH",
+      lat: 47.45,
+      lon: 8.56,
+      elevation: null,
+    },
+  ];
+  const stored = {};
+  f.dashboard.preferences.read = (key, fallback) => stored[key] ?? fallback;
+  f.dashboard.preferences.save = (key, value) => {
+    stored[key] = value;
+  };
+  f.dashboard.loadStationData = () => {};
+  f.dashboard.loadStationList = () => {};
+  let selectedCode;
+  f.dashboard.selectStation = (code) => {
+    selectedCode = code;
+    f.state.station = f.state.stationOptions.find(
+      (station) => station.code === code,
+    );
+  };
+
+  const app = createApp({ ...f, dashboard: f.dashboard });
+  app.init();
+  const search = f.el("station-search");
+  search.value = "zurcih / kloten";
+  search.dispatch("input");
+
+  assert.deepEqual(
+    f
+      .el("station-menu")
+      .querySelectorAll("[data-station]")
+      .map((option) => option.dataset.station),
+    ["KLO"],
+  );
+  search.dispatch("keydown", { key: "Enter" });
+  assert.equal(selectedCode, "KLO");
+  assert.deepEqual(stored["isobar-recent-stations"], ["KLO"]);
+
+  f.el("picker-toggle").click();
+  assert.match(f.el("station-menu").innerHTML, /RECENT/);
+  assert.equal(
+    f.el("station-menu").querySelector("[data-station]").dataset.station,
+    "KLO",
+  );
+});
+
+test("Enter selects the first visible station suggestion", (t) => {
+  const f = fixture(t);
+  f.state.stationOptions = [
+    {
+      code: "KLO",
+      name: "Zürich / Kloten",
+      canton: "ZH",
+      lat: 47.478653,
+      lon: 8.529844,
+    },
+    {
+      code: "ZRH",
+      name: "Zürich",
+      canton: "ZH",
+      lat: 47.45,
+      lon: 8.56,
+    },
+  ];
+  f.state.favorites = ["KLO", "ZRH"];
+  f.dashboard.loadStationData = () => {};
+  f.dashboard.loadStationList = () => {};
+  const stored = {};
+  f.dashboard.preferences.read = (key, fallback) => stored[key] ?? fallback;
+  f.dashboard.preferences.save = (key, value) => {
+    stored[key] = value;
+  };
+  let selectedCode;
+  f.dashboard.selectStation = (code) => {
+    selectedCode = code;
+  };
+  const app = createApp({ ...f, dashboard: f.dashboard });
+  app.init();
+  const search = f.el("station-search");
+  search.value = "zurich";
+  search.dispatch("input");
+
+  const suggestions = f.el("station-menu").querySelectorAll("[data-station]");
+  assert.deepEqual(
+    suggestions.map((option) => option.dataset.station),
+    ["KLO", "ZRH"],
+  );
+  assert.equal(suggestions[0].classList.contains("first-suggestion"), true);
+  assert.equal(suggestions[0].getAttribute("aria-keyshortcuts"), "Enter");
+  assert.equal(suggestions[0].getAttribute("tabindex"), "-1");
+  search.dispatch("keydown", { key: "Tab" });
+  assert.equal(f.document.activeElement, suggestions[1]);
+  suggestions[1].dispatch("keydown", { key: "Tab", shiftKey: true });
+  assert.equal(f.document.activeElement, search);
+  search.dispatch("keydown", { key: "Enter" });
+  assert.equal(selectedCode, "KLO");
+});
+
+test("place search shows nearby stations for every plausible place with distance labels", async (t) => {
+  const f = fixture(t);
+  f.state.stationOptions = [
+    { code: "BCH", name: "Station West", canton: "AG", lat: 47.39, lon: 8.08 },
+    { code: "SGN", name: "Station East", canton: "SG", lat: 47.16, lon: 9.47 },
+  ];
+  f.dashboard.loadStationData = () => {};
+  f.dashboard.loadStationList = () => {};
+  f.dashboard.searchPlace = async () => {
+    f.state.placeOptions = [
+      {
+        label: "Buchs, St. Gallen",
+        detail: "SG",
+        lat: 47.1667,
+        lon: 9.4667,
+        confidence: 100,
+      },
+      {
+        label: "Buchs, Aargau",
+        detail: "AG",
+        lat: 47.3933,
+        lon: 8.1858,
+        confidence: 100,
+      },
+    ];
+    f.state.nearbyPlaces = [
+      {
+        place: f.state.placeOptions[0],
+        stations: [
+          { station: f.state.stationOptions[1], distanceKm: 0.5 },
+          { station: f.state.stationOptions[0], distanceKm: 98.4 },
+        ],
+      },
+      {
+        place: f.state.placeOptions[1],
+        stations: [
+          { station: f.state.stationOptions[0], distanceKm: 7.2 },
+          { station: f.state.stationOptions[1], distanceKm: 97.1 },
+        ],
+      },
+    ];
+    f.state.geocodeStatus = "idle";
+    f.app.render();
+    return f.state.placeOptions;
+  };
+  f.app = createApp({ ...f, dashboard: f.dashboard });
+  f.app.init();
+  const search = f.el("station-search");
+  search.value = "Buchs";
+  search.dispatch("input");
+  await f.timers.at(-1)();
+
+  assert.deepEqual(
+    f
+      .el("station-menu")
+      .querySelectorAll(".nearby-option")
+      .map((option) => option.textContent),
+    [
+      "Station EastBuchs, St. Gallen · 0.5 km · 100/100",
+      "Station WestBuchs, St. Gallen · 98.4 km · 100/100",
+      "Station WestBuchs, Aargau · 7.2 km · 100/100",
+      "Station EastBuchs, Aargau · 97.1 km · 100/100",
+    ],
+  );
+  assert.equal(f.el("station-menu").querySelectorAll("[data-place]").length, 0);
+  assert.match(f.el("station-menu").innerHTML, /NEAR Buchs, St\. Gallen/);
+  assert.match(f.el("station-menu").innerHTML, /NEAR Buchs, Aargau/);
+  assert.match(f.el("station-menu").innerHTML, /Places © swisstopo/);
+});
+
+test("Enter selects the closest station when no station name matches the place", async (t) => {
+  const f = fixture(t);
+  f.state.stationOptions = [
+    { code: "FAR", name: "Remote station", canton: "VD", lat: 46.7, lon: 6.2 },
+    { code: "CLO", name: "Nearest station", canton: "GE", lat: 46.2, lon: 6.1 },
+  ];
+  f.dashboard.loadStationData = () => {};
+  f.dashboard.loadStationList = () => {};
+  f.dashboard.searchPlace = async () => {
+    f.state.placeOptions = [
+      {
+        label: "Geneva",
+        detail: "GE",
+        lat: 46.2044,
+        lon: 6.1432,
+        confidence: 100,
+      },
+    ];
+    f.state.nearbyPlaces = [
+      {
+        place: f.state.placeOptions[0],
+        stations: [{ station: f.state.stationOptions[1], distanceKm: 1.2 }],
+      },
+    ];
+    f.state.geocodeStatus = "idle";
+    f.app.render();
+    return f.state.placeOptions;
+  };
+  const stored = {};
+  f.dashboard.preferences.read = (key, fallback) => stored[key] ?? fallback;
+  f.dashboard.preferences.save = (key, value) => {
+    stored[key] = value;
+  };
+  let selectedCode;
+  f.dashboard.selectStation = (code) => {
+    selectedCode = code;
+  };
+  f.app = createApp({ ...f, dashboard: f.dashboard });
+  f.app.init();
+  const search = f.el("station-search");
+  search.value = "Geneva";
+  search.dispatch("input");
+  await f.timers.at(-1)();
+  search.dispatch("keydown", { key: "Enter" });
+  assert.equal(selectedCode, "CLO");
+  assert.deepEqual(stored["isobar-recent-stations"], ["CLO"]);
+});

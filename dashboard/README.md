@@ -24,16 +24,17 @@ Run `npm run format` to format the dashboard. Tests use Node's built-in test run
 
 ## Structure
 
-| File         | Responsibility                                                                          |
-| ------------ | --------------------------------------------------------------------------------------- |
-| `app.js`     | Browser startup, current conditions, station/metric controls, and event handling        |
-| `model.js`   | Application state, preference restoration, station loading, and observation polling     |
-| `weather.js` | CSV/date parsing, station normalization, feed caching, merging, aggregation, and trends |
-| `chart.js`   | SVG chart, tooltip, linked readings table, and CSV download                             |
-| `config.js`  | Metric definitions, API parameter aliases, ranges, and fallback stations                |
-| `storage.js` | Validated preference reads and best-effort writes                                       |
-| `format.js`  | Escaping, measurement formatting, compass labels, and CSV serialization                 |
-| `style.css`  | Theme tokens, component styles, and consolidated responsive layouts                     |
+| File         | Responsibility                                                                     |
+| ------------ | ---------------------------------------------------------------------------------- |
+| `app.js`     | Browser startup, current conditions, station/metric controls, and event handling   |
+| `model.js`   | Application state, preference restoration, station loading, geocoding, and polling |
+| `weather.js` | CSV/date parsing, station normalization, proximity, feed caching, and trends       |
+| `geocode.js` | Swiss place search and result normalization                                        |
+| `chart.js`   | SVG chart, tooltip, linked readings table, and CSV download                        |
+| `config.js`  | Metric definitions, API parameter aliases, ranges, and fallback stations           |
+| `storage.js` | Validated preference reads and best-effort writes                                  |
+| `format.js`  | Escaping, measurement formatting, compass labels, and CSV serialization            |
+| `style.css`  | Theme tokens, component styles, and consolidated responsive layouts                |
 
 ## Data behavior
 
@@ -48,4 +49,6 @@ Run `npm run format` to format the dashboard. Tests use Node's built-in test run
 
 ## Controls
 
-Search by station name, canton, or code. Use `Ctrl/Cmd+K` to focus search, `ArrowDown` to reach station options, and `Escape` to close the menu. Favorites and metrics support drag reordering; favorites also support `Alt+Left/Right`, and metric order has arrow buttons in the customization dialog. Select a metric to view its history, then select a chart point or table row to highlight the corresponding observation.
+Search by station name, canton, or code. Use `Ctrl/Cmd+K` to focus search, `Tab` to move to the second suggestion (the first is preselected) and continue through the list, `Shift+Tab` to return to search, `ArrowDown` as an alternate way to reach suggestions, and `Escape` to close the menu. The first suggestion is highlighted and can be selected with `Enter`. Favorites and metrics support drag reordering; favorites also support `Alt+Left/Right`, and metric order has arrow buttons in the customization dialog. Select a metric to view its history, then select a chart point or table row to highlight the corresponding observation.
+
+The station search also finds Swiss places through the swisstopo SearchServer after a short pause. It immediately shows the five nearest MeteoSwiss stations for each plausible place, with the place name, distance, and text-match score alongside each station. A high-confidence unique place is shown as a single group; ambiguous distant places are shown as separate groups. Results within 5 km are treated as the same place and represented by the shorter name. The 0–100 match score is a heuristic based on the query and result label/detail, not a probability or a score provided by swisstopo. Press Enter when no station name matches to switch to the nearest station for the best-ranked place. Place search uses the public swisstopo API and displays its attribution in the suggestions menu.

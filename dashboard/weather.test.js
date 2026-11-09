@@ -10,6 +10,8 @@ import {
   summarizeSeries,
   createWeatherClient,
   normalizeStations,
+  distanceKm,
+  nearestStations,
 } from "./weather.js";
 import { observationsCSV } from "./format.js";
 
@@ -81,6 +83,23 @@ test("station normalization validates coordinates and deduplicates station codes
   assert.equal(normalized.length, 1);
   assert.equal(normalized[0].elevation, 456);
   assert.equal(normalized[0].lat, 46.51);
+});
+
+test("calculates geographic distances and returns nearest stations in order", () => {
+  const place = { lat: 46.5197, lon: 6.6323 };
+  const nearby = [
+    { code: "FAR", name: "Far", lat: 47, lon: 7 },
+    { code: "CLOSE", name: "Close", lat: 46.52, lon: 6.63 },
+    { code: "MID", name: "Middle", lat: 46.6, lon: 6.7 },
+    { code: "BAD", name: "Invalid", lat: 100, lon: 2 },
+  ];
+  assert.ok(distanceKm(place, nearby[1]) < 1);
+  assert.equal(distanceKm(place, { lat: NaN, lon: 0 }), null);
+  assert.deepEqual(
+    nearestStations(nearby, place, 2).map(({ station }) => station.code),
+    ["CLOSE", "MID"],
+  );
+  assert.equal(nearestStations(nearby, place, 2)[0].distanceKm < 1, true);
 });
 
 test("feed cache expires after ten minutes and polling leaves it intact", async () => {

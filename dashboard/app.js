@@ -33,6 +33,7 @@ export function createApp({
   const primaryGroup = () =>
     metricGroups.find((group) => !state.hiddenGroups.has(group.id));
   let toastTimer;
+  let placeSearchTimer;
 
   function showToast(message) {
     el("app-toast").textContent = message;
@@ -57,33 +58,181 @@ export function createApp({
     renderChart();
   }
 
-  // Station selection and favorites.
+  function normalizeSearchText(value) {
+    return value
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
+  }
+
+  function editDistanceAtMostOne(left, right) {
+    if (Math.abs(left.length - right.length) > 1) return false;
+    let leftIndex = 0;
+    let rightIndex = 0;
+    let edits = 0;
+    while (leftIndex < left.length && rightIndex < right.length) {
+      if (left[leftIndex] === right[rightIndex]) {
+        leftIndex++;
+        rightIndex++;
+        continue;
+      }
+      if (++edits > 1) return false;
+      if (left.length > right.length) leftIndex++;
+      else if (right.length > left.length) rightIndex++;
+      else {
+        if (
+          leftIndex + 1 < left.length &&
+          left[leftIndex] === right[rightIndex + 1] &&
+          left[leftIndex + 1] === right[rightIndex]
+        ) {
+          leftIndex += 2;
+          rightIndex += 2;
+        } else {
+          leftIndex++;
+          rightIndex++;
+        }
+      }
+    }
+    return (
+      edits + Number(leftIndex < left.length || rightIndex < right.length) <= 1
+    );
+  }
+
+  function stationScore(station, queryTerms) {
+    if (!queryTerms.length) return 0;
+    const nameTerms = normalizeSearchText(station.name).split(" ");
+    const code = normalizeSearchText(station.code);
+    const canton = normalizeSearchText(station.canton);
+    let score = 0;
+
+    for (const term of queryTerms) {
+      let best = 0;
+      if (code === term) best = 100;
+      else if (code.startsWith(term)) best = 70;
+      else if (code.includes(term)) best = 40;
+
+      if (canton === term) best = Math.max(best, 60);
+      else if (canton.startsWith(term)) best = Math.max(best, 35);
+
+      for (const nameTerm of nameTerms) {
+        if (nameTerm === term) best = Math.max(best, 80);
+        else if (nameTerm.startsWith(term)) best = Math.max(best, 50);
+        else if (nameTerm.includes(term)) best = Math.max(best, 30);
+        else if (
+          term.length >= 4 &&
+          nameTerm.length >= 4 &&
+          editDistanceAtMostOne(nameTerm, term)
+        )
+          best = Math.max(best, 20);
+      }
+
+      // Treat all query words as constraints so unrelated partial matches
+      // don't crowd out the result the user actually described.
+      if (!best) return 0;
+      score += best;
+    }
+    return score;
+  }
+
+  function stationQuery(input) {
+    if (normalizeSearchText(input) === normalizeSearchText(state.station.name))
+      return [];
+    return normalizeSearchText(input).split(/\s+/).filter(Boolean);
+  }
+
+  function getRecentStations() {
+    return preferences
+      .read("isobar-recent-stations", [])
+      .filter((code) =>
+        state.stationOptions.some((station) => station.code === code),
+      )
+      .slice(0, 5);
+  }
+
+  function saveRecentStation(code) {
+    const recent = getRecentStations().filter(
+      (recentCode) => recentCode !== code,
+    );
+    preferences.save("isobar-recent-stations", [code, ...recent].slice(0, 5));
+  }
+
   function renderStationMenu() {
     const input = el("station-search").value;
-    const query = (input === state.station.name ? "" : input)
-      .trim()
-      .toLocaleLowerCase();
-    const matches = state.stationOptions.filter((station) =>
-      `${station.name} ${station.canton} ${station.code}`
-        .toLocaleLowerCase()
-        .includes(query),
-    );
-    const codes = new Set(matches.map((station) => station.code));
+    const queryTerms = stationQuery(input);
+    const recent = queryTerms.length ? [] : getRecentStations();
+    const scored = state.stationOptions.map((station) => ({
+      station,
+      score: queryTerms.length ? stationScore(station, queryTerms) : 0,
+    }));
+    const sorted = scored
+      .filter((s) => !queryTerms.length || s.score > 0)
+      .sort(
+        (a, b) =>
+          b.score - a.score || a.station.name.localeCompare(b.station.name),
+      );
+    const matched = sorted.map((s) => s.station);
+    const codes = new Set(matched.map((station) => station.code));
     const favorites = state.favorites
       .map((code) =>
         state.stationOptions.find((station) => station.code === code),
       )
       .filter((station) => station && codes.has(station.code));
-    const others = matches.filter(
-      (station) => !state.favorites.includes(station.code),
+    const others = matched.filter(
+      (station) =>
+        !state.favorites.includes(station.code) &&
+        !recent.includes(station.code),
     );
     const option = (station) =>
       `<button type="button" class="station-option" role="option" data-station="${esc(station.code)}" aria-selected="${station.code === state.station.code}"><span>${esc(station.name)}</span><small>${esc(station.code)}</small></button>`;
+    const nearbyGroups = state.nearbyPlaces
+      .map(
+        ({ place, stations }) =>
+          `<div class="menu-group-label">NEAR ${esc(place.label)} · MATCH ${place.confidence}/100</div>${stations
+            .map(
+              ({ station, distanceKm }) =>
+                `<button type="button" class="station-option nearby-option" role="option" data-station="${esc(station.code)}" aria-selected="${station.code === state.station.code}"><span>${esc(station.name)}</span><small>${esc(place.label)} · ${distanceKm.toFixed(1)} km · ${place.confidence}/100</small></button>`,
+            )
+            .join("")}`,
+      )
+      .join("");
+    const recentOptions = recent
+      .map((code) =>
+        state.stationOptions.find((station) => station.code === code),
+      )
+      .filter((station) => station && !state.favorites.includes(station.code));
+    const statuses =
+      state.geocodeStatus === "loading"
+        ? '<div class="place-status" role="status">Searching for places…</div>'
+        : state.geocodeStatus === "error"
+          ? '<div class="place-status place-error" role="status">Place not found</div>'
+          : "";
+    const nearbyAttribution = state.nearbyPlaces.length
+      ? '<div class="place-attribution">Places © swisstopo</div>'
+      : "";
+    const noStations =
+      !matched.length &&
+      !state.nearbyPlaces.length &&
+      state.geocodeStatus !== "loading" &&
+      state.geocodeStatus !== "error" &&
+      normalizeSearchText(input).length < 3
+        ? '<div class="empty-stations">No stations found</div>'
+        : "";
     el("station-menu").innerHTML =
-      `${favorites.length ? `<div class="menu-group-label">FAVORITES</div>${favorites.map(option).join("")}` : ""}${others.map(option).join("") || (!favorites.length ? '<div class="empty-stations">No stations found</div>' : "")}`;
+      `${recentOptions.length ? `<div class="menu-group-label">RECENT</div>${recentOptions.map(option).join("")}` : ""}${favorites.length ? `<div class="menu-group-label">FAVORITES</div>${favorites.map(option).join("")}` : ""}${others.map(option).join("")}${nearbyGroups}${nearbyAttribution}${statuses}${noStations}`;
+    const firstSuggestion = el("station-menu").querySelector("[data-station]");
+    firstSuggestion?.classList.add("first-suggestion");
+    firstSuggestion?.setAttribute("aria-keyshortcuts", "Enter");
+    firstSuggestion?.setAttribute("tabindex", "-1");
   }
 
   function setStationMenu(open) {
+    if (!open) {
+      window.clearTimeout?.(placeSearchTimer);
+      placeSearchTimer = undefined;
+      dashboard.cancelPlaceSearch?.();
+    }
     el("station-menu").classList.toggle("open", open);
     el("station-search").setAttribute("aria-expanded", String(open));
     el("picker-toggle").setAttribute("aria-expanded", String(open));
@@ -98,6 +247,7 @@ export function createApp({
       (item) => item.code === button.dataset.station,
     );
     if (!station) return;
+    saveRecentStation(station.code);
     el("station-search").value = station.name;
     dashboard.selectStation(station.code);
   }
@@ -386,10 +536,85 @@ export function createApp({
         el("station-search").select();
       setStationMenu(true);
     });
-    el("station-search").addEventListener("input", () => setStationMenu(true));
+    el("station-search").addEventListener("input", () => {
+      setStationMenu(true);
+      window.clearTimeout?.(placeSearchTimer);
+      dashboard.clearPlaceSearch?.();
+      const query = el("station-search").value.trim();
+      if (
+        normalizeSearchText(query).length < 3 ||
+        normalizeSearchText(query) === normalizeSearchText(state.station.name)
+      )
+        return;
+      placeSearchTimer = window.setTimeout(() => {
+        placeSearchTimer = undefined;
+        dashboard.searchPlace(query);
+      }, 450);
+    });
+    el("station-search").addEventListener("keydown", (event) => {
+      if (
+        event.key === "Tab" &&
+        !event.shiftKey &&
+        el("station-menu").classList.contains("open")
+      ) {
+        const suggestions =
+          el("station-menu").querySelectorAll("[data-station]");
+        const nextSuggestion = suggestions[1] || suggestions[0];
+        if (nextSuggestion) {
+          event.preventDefault();
+          suggestions[0]?.classList.remove("first-suggestion");
+          suggestions[0]?.setAttribute("aria-selected", "false");
+          nextSuggestion.focus();
+          return;
+        }
+      }
+      if (
+        event.key === "Enter" &&
+        el("station-menu").classList.contains("open")
+      ) {
+        event.preventDefault();
+        const firstOption = () =>
+          el("station-menu").querySelector("[data-station]");
+        const option = firstOption();
+        if (option) {
+          option.click();
+          return;
+        }
+        const selectFirstSuggestion = () => {
+          if (
+            el("station-search").value.trim() !== input ||
+            !el("station-menu").classList.contains("open")
+          )
+            return;
+          firstOption()?.click();
+        };
+        const input = el("station-search").value.trim();
+        if (state.nearbyPlaces.length || state.nearbyStations.length) {
+          selectFirstSuggestion();
+        } else if (state.geocodeStatus === "loading") {
+          dashboard.searchPlace(input).then(selectFirstSuggestion);
+        } else if (normalizeSearchText(input).length >= 3) {
+          window.clearTimeout?.(placeSearchTimer);
+          placeSearchTimer = undefined;
+          dashboard.searchPlace(input).then(selectFirstSuggestion);
+        }
+      }
+    });
     el("picker-toggle").addEventListener("click", () =>
       setStationMenu(!el("station-menu").classList.contains("open")),
     );
+    el("station-menu").addEventListener("keydown", (event) => {
+      const suggestions = el("station-menu").querySelectorAll("[data-station]");
+      const firstTabStop = suggestions[1] || suggestions[0];
+      if (
+        event.key === "Tab" &&
+        event.shiftKey &&
+        event.target === firstTabStop
+      ) {
+        event.preventDefault();
+        el("station-search").focus();
+      }
+    });
     el("station-menu").addEventListener("click", selectStation);
     el("favorite-stations").addEventListener("click", selectStation);
     document.addEventListener("click", (event) => {
@@ -576,7 +801,9 @@ export function createApp({
       if (event.key === "ArrowDown" && event.target === el("station-search")) {
         event.preventDefault();
         setStationMenu(true);
-        el("station-menu").querySelector("[data-station]")?.focus();
+        el("station-menu")
+          .querySelector("[data-station], [data-place]")
+          ?.focus();
       }
     });
   }

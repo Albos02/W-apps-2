@@ -333,13 +333,51 @@ button:disabled {
   font-size: 12px;
 }
 .station-option:hover,
-.station-option[aria-selected="true"] {
+.station-option[aria-selected="true"],
+.station-option.first-suggestion {
   background: var(--accent-soft);
   color: var(--accent);
+}
+.station-option:focus-visible {
+  outline: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.station-option.first-suggestion::after {
+  content: "↵ Enter";
+  align-self: center;
+  margin-left: 10px;
+  color: var(--accent);
+  font: 9px var(--mono);
+  white-space: nowrap;
 }
 .station-option small {
   color: var(--faint);
   font: 10px var(--mono);
+}
+.nearby-option small {
+  max-width: 58%;
+  overflow: hidden;
+  margin-left: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.place-status,
+.place-attribution {
+  padding: 8px 9px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.place-status {
+  font-style: italic;
+}
+.place-error {
+  color: var(--muted);
+}
+.place-attribution {
+  padding-top: 4px;
+  color: var(--faint);
+  font-size: 10px;
 }
 .menu-group-label {
   padding: 8px 9px 4px;

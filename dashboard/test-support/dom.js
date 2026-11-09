@@ -202,6 +202,9 @@ export function createDOM(html) {
       timers.push(callback);
       return timers.length;
     },
+    clearTimeout: (id) => {
+      if (id > 0 && id <= timers.length) timers[id - 1] = () => {};
+    },
   };
   return { document, window, timers };
 }
