@@ -158,36 +158,44 @@ test("recent history uses a byte-range tail with the CSV header", async () => {
   const header = "station_abbr;reference_timestamp;tre200s0\n";
   const older = new Date(now - 25 * 60 * 60 * 1000).toISOString();
   const recent = new Date(now - 60 * 60 * 1000).toISOString();
+  let resolveHeader;
   const client = createWeatherClient(
-    async (_url, options) => {
+    (_url, options) => {
       requests.push(options);
-      if (requests.length === 1) {
-        return {
-          ok: true,
-          status: 206,
-          headers: { get: () => "bytes 0-40/100000" },
-          text: async () => header,
-        };
+      if (options.headers.Range === "bytes=0-4095") {
+        return new Promise((resolve) => {
+          resolveHeader = () =>
+            resolve({
+              ok: true,
+              status: 206,
+              headers: { get: () => "bytes 0-40/100000" },
+              text: async () => header,
+            });
+        });
       }
-      const [, start] = options.headers.Range.match(/bytes=(\d+)-/);
-      return {
+      const [, byteCount] = options.headers.Range.match(/bytes=-(\d+)/);
+      const start = 100000 - Number(byteCount);
+      return Promise.resolve({
         ok: true,
         status: 206,
         headers: { get: () => `bytes ${start}-99999/100000` },
         text: async () => `partial-row\nBER;${older};4.5\nBER;${recent};4.7\n`,
-      };
+      });
     },
     () => now,
   );
 
-  const points = await client.fetchCSV(stations[0], "recent", { range: "24h" });
+  const pending = client.fetchCSV(stations[0], "recent", { range: "24h" });
+  assert.equal(requests.length, 2, "header and tail requests start together");
+  assert.equal(requests[0].headers.Range, "bytes=0-4095");
+  assert.match(requests[1].headers.Range, /^bytes=-\d+$/);
+  resolveHeader();
+  const points = await pending;
 
   assert.deepEqual(
     points.map((point) => point.date.toISOString()),
     [older, recent],
   );
-  assert.equal(requests[0].headers.Range, "bytes=0-4095");
-  assert.match(requests[1].headers.Range, /^bytes=\d+-99999$/);
 });
 
 test("empty and failed feed responses are retried instead of cached", async () => {

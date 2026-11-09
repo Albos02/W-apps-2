@@ -380,7 +380,14 @@ export function createWeatherClient(fetch = globalThis.fetch, now = Date.now) {
       const response = await fetch(url, { mode: "cors", signal });
       points = parseCSV(await checkedText(response));
     } else {
-      const headerResponse = await request(`bytes=0-${CSV_HEADER_RANGE}`);
+      const cutoff = now() - RANGE_PRESETS[range].hours * HOUR;
+      let byteCount = Math.ceil(
+        RANGE_PRESETS[range].hours * 6 * CSV_BYTES_PER_OBSERVATION * 1.5,
+      );
+      const [headerResponse, initialTailResponse] = await Promise.all([
+        request(`bytes=0-${CSV_HEADER_RANGE}`),
+        request(`bytes=-${byteCount}`),
+      ]);
       const headerText = await checkedText(headerResponse);
       if (headerResponse.status !== 206) {
         points = parseCSV(headerText);
@@ -389,22 +396,21 @@ export function createWeatherClient(fetch = globalThis.fetch, now = Date.now) {
         if (!header) {
           points = parseCSV(headerText);
         } else {
-          const cutoff = now() - RANGE_PRESETS[range].hours * HOUR;
-          let byteCount = Math.ceil(
-            RANGE_PRESETS[range].hours * 6 * CSV_BYTES_PER_OBSERVATION * 1.5,
-          );
           points = [];
+          let tailResponse = initialTailResponse;
           while (byteCount <= MAX_CSV_RANGE_BYTES) {
             signal?.throwIfAborted();
-            const totalBytes = Number(
-              responseHeader(headerResponse, "content-range").match(
-                /\/(\d+)$/,
-              )?.[1],
-            );
-            const tailRange = Number.isFinite(totalBytes)
-              ? `bytes=${Math.max(0, totalBytes - byteCount - 1)}-${totalBytes - 1}`
-              : `bytes=-${byteCount}`;
-            const tailResponse = await request(tailRange);
+            if (!tailResponse) {
+              const totalBytes = Number(
+                responseHeader(headerResponse, "content-range").match(
+                  /\/(\d+)$/,
+                )?.[1],
+              );
+              const tailRange = Number.isFinite(totalBytes)
+                ? `bytes=${Math.max(0, totalBytes - byteCount - 1)}-${totalBytes - 1}`
+                : `bytes=-${byteCount}`;
+              tailResponse = await request(tailRange);
+            }
             const tailText = await checkedText(tailResponse);
             if (tailResponse.status !== 206) {
               points = parseCSV(tailText);
@@ -423,6 +429,7 @@ export function createWeatherClient(fetch = globalThis.fetch, now = Date.now) {
               break;
             if (byteCount === MAX_CSV_RANGE_BYTES) break;
             byteCount = Math.min(byteCount * 2, MAX_CSV_RANGE_BYTES);
+            tailResponse = null;
           }
         }
       }

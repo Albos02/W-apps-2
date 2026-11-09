@@ -76,18 +76,30 @@ test("ignores stale station responses and uses the official endpoint", async () 
   const fetch = (url) =>
     new Promise((resolve) => pending.push({ url, resolve }));
   const { state, loadStationData } = app(fetch);
+  const oldStationCode = state.station.code.toLowerCase();
   const oldRequest = loadStationData();
   state.station = stations.find((station) => station.code === "BER");
   const newRequest = loadStationData();
+  const berRequests = pending.filter(({ url }) => url.includes("/ber/"));
   assert.match(
-    pending[2].url,
+    berRequests.find(({ url }) => url.endsWith("_t_now.csv")).url,
     /ch\.meteoschweiz\.ogd-smn\/ber\/ogd-smn_ber_t_now\.csv$/,
   );
-  for (const request of pending.slice(2))
-    request.resolve({ ok: true, text: async () => csv("BER", 4.5) });
+  for (const request of berRequests)
+    request.resolve({
+      ok: true,
+      status: 200,
+      text: async () => csv("BER", 4.5),
+    });
   await newRequest;
-  for (const request of pending.slice(0, 2))
-    request.resolve({ ok: true, text: async () => csv("PUY", 18) });
+  for (const request of pending.filter(({ url }) =>
+    url.includes(`/${oldStationCode}/`),
+  ))
+    request.resolve({
+      ok: true,
+      status: 200,
+      text: async () => csv(oldStationCode.toUpperCase(), 18),
+    });
   await oldRequest;
   assert.equal(state.station.code, "BER");
   assert.equal(state.current.temp, 4.5);
@@ -186,7 +198,7 @@ test("merges both feeds and keeps the rolling 24 hours across midnight", async (
 
   await loadStationData();
 
-  assert.equal(requested.length, 2);
+  assert.equal(requested.length, 3);
   assert.ok(requested.some((url) => url.endsWith("_t_now.csv")));
   assert.ok(requested.some((url) => url.endsWith("_t_recent.csv")));
   assert.equal(state.history.length, 3);
@@ -256,10 +268,19 @@ test("calculates wind direction trends across north using the shorter turn", () 
 
 test("flags a newer observation and clears the cue when refreshed", async () => {
   let fetchCount = 0;
-  const fetch = async () => {
+  let currentFeedCount = 0;
+  const fetch = async (url) => {
     fetchCount++;
-    const timestamp = fetchCount <= 2 ? "07.11.2026 23:50" : "08.11.2026 00:00";
-    return { ok: true, text: async () => csvAt("PUY", timestamp, 4.5) };
+    const isCurrentFeed = url.endsWith("_t_now.csv");
+    if (isCurrentFeed) currentFeedCount++;
+    const timestamp =
+      currentFeedCount <= 1 ? "07.11.2026 23:50" : "08.11.2026 00:00";
+    return {
+      ok: true,
+      ...(isCurrentFeed ? {} : { status: 200 }),
+      text: async () =>
+        csvAt("PUY", isCurrentFeed ? timestamp : "07.11.2026 23:50", 4.5),
+    };
   };
   const { state, loadStationData } = app(fetch);
 
@@ -272,7 +293,7 @@ test("flags a newer observation and clears the cue when refreshed", async () => 
 
   // A normal reload uses the in-memory feed cache until it expires.
   await loadStationData();
-  assert.equal(fetchCount, 2);
+  assert.equal(fetchCount, 3);
   assert.equal(state.newReadingAvailable, false);
 
   await loadStationData({ forceRefresh: true });
@@ -412,22 +433,26 @@ test("aborts superseded station requests and polls", async () => {
   );
   const first = dashboard.loadStationData();
   const second = dashboard.selectStation("BER");
-  assert.ok(pending.slice(0, 2).every(({ signal }) => signal.aborted));
-  for (const request of pending.slice(2))
-    request.resolve({ ok: true, text: async () => csv("BER", 4.5) });
+  assert.ok(pending.slice(0, 3).every(({ signal }) => signal.aborted));
+  for (const request of pending.slice(3))
+    request.resolve({
+      ok: true,
+      status: 200,
+      text: async () => csv("BER", 4.5),
+    });
   await Promise.all([first, second]);
   assert.equal(dashboard.state.feedStatus, "Live data");
 
   const poll = dashboard.checkForNewObservation();
   const newerPoll = dashboard.checkForNewObservation();
-  assert.equal(pending[4].signal.aborted, true);
+  assert.equal(pending[6].signal.aborted, true);
   const refresh = dashboard.loadStationData({ forceRefresh: true });
-  assert.equal(pending[5].signal.aborted, true);
+  assert.equal(pending[7].signal.aborted, true);
   // Polling during a refresh must not start another background request.
   await dashboard.checkForNewObservation();
-  assert.equal(pending.length, 8);
-  for (const request of pending.slice(6))
-    request.resolve({ ok: true, text: async () => csv("BER", 8) });
+  assert.equal(pending.length, 11);
+  for (const request of pending.slice(8))
+    request.resolve({ ok: true, status: 200, text: async () => csv("BER", 8) });
   await Promise.all([poll, newerPoll, refresh]);
   assert.equal(dashboard.state.current.temp, 8);
   assert.equal(dashboard.state.isRefreshing, false);
