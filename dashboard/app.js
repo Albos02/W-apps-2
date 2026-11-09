@@ -59,7 +59,7 @@ export function createApp({
       !["Connecting", "Live data"].includes(state.feedStatus),
     );
     if (document.activeElement !== el("station-search"))
-      el("station-search").value = state.station.name;
+      el("station-search").value = state.station?.name || "";
     renderStationMenu();
     renderCurrent();
     renderChart();
@@ -135,7 +135,10 @@ export function createApp({
   }
 
   function stationQuery(input) {
-    if (normalizeSearchText(input) === normalizeSearchText(state.station.name))
+    if (
+      state.station &&
+      normalizeSearchText(input) === normalizeSearchText(state.station.name)
+    )
       return [];
     return normalizeSearchText(input).split(/\s+/).filter(Boolean);
   }
@@ -183,14 +186,14 @@ export function createApp({
         !recent.includes(station.code),
     );
     const option = (station) =>
-      `<button type="button" class="station-option" role="option" data-station="${esc(station.code)}" aria-selected="${station.code === state.station.code}"><span>${esc(station.name)}</span><small>${esc(station.code)}</small></button>`;
+      `<button type="button" class="station-option" role="option" data-station="${esc(station.code)}" aria-selected="${station.code === state.station?.code}"><span>${esc(station.name)}</span><small>${esc(station.code)}</small></button>`;
     const nearbyGroups = state.nearbyPlaces
       .map(
         ({ place, stations }) =>
           `<div class="menu-group-label">NEAR ${esc(place.label)} · MATCH ${place.confidence}/100</div>${stations
             .map(
               ({ station, distanceKm }) =>
-                `<button type="button" class="station-option nearby-option" role="option" data-station="${esc(station.code)}" aria-selected="${station.code === state.station.code}"><span>${esc(station.name)}</span><small>${esc(place.label)} · ${distanceKm.toFixed(1)} km · ${place.confidence}/100</small></button>`,
+                `<button type="button" class="station-option nearby-option" role="option" data-station="${esc(station.code)}" aria-selected="${station.code === state.station?.code}"><span>${esc(station.name)}</span><small>${esc(place.label)} · ${distanceKm.toFixed(1)} km · ${place.confidence}/100</small></button>`,
             )
             .join("")}`,
       )
@@ -237,14 +240,28 @@ export function createApp({
     if (open) renderStationMenu();
   }
 
+  function clearStationQueryParam() {
+    if (!window.location?.href || !window.history?.replaceState) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("station")) return;
+    url.searchParams.delete("station");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }
+
   function selectStation(event) {
     const button = event.target.closest("[data-station]");
     if (!button) return;
+    const selectedFromSearch = el("station-menu").contains(button);
     setStationMenu(false);
     const station = state.stationOptions.find(
       (item) => item.code === button.dataset.station,
     );
     if (!station) return;
+    if (selectedFromSearch) clearStationQueryParam();
     saveRecentStation(station.code);
     el("station-search").value = station.name;
     dashboard.selectStation(station.code);
@@ -260,10 +277,13 @@ export function createApp({
     el("favorite-stations").innerHTML = favorites
       .map(
         (station) =>
-          `<button class="favorite-station ${station.code === state.station.code ? "active" : ""}" type="button" draggable="true" data-station="${esc(station.code)}" aria-pressed="${station.code === state.station.code}" aria-label="Switch to ${esc(station.name)}. Use Alt plus arrow keys to reorder." title="Drag to reorder favorites"><span aria-hidden="true">★</span>${esc(station.name)}</button>`,
+          `<button class="favorite-station ${station.code === state.station?.code ? "active" : ""}" type="button" draggable="true" data-station="${esc(station.code)}" aria-pressed="${station.code === state.station?.code}" aria-label="Switch to ${esc(station.name)}. Use Alt plus arrow keys to reorder." title="Drag to reorder favorites"><span aria-hidden="true">★</span>${esc(station.name)}</button>`,
       )
       .join("");
-    const saved = state.favorites.includes(state.station.code);
+    const saved = Boolean(
+      state.station && state.favorites.includes(state.station.code),
+    );
+    el("favorite-toggle").disabled = !state.station;
     el("favorite-toggle").classList.toggle("is-favorite", saved);
     el("favorite-toggle").setAttribute("aria-pressed", String(saved));
     el("favorite-label").textContent = saved
@@ -449,10 +469,11 @@ export function createApp({
     const { station, current } = state;
     const primary = primaryGroup();
     const field = primary.fields[0];
-    el("current-station").textContent = station.name;
-    el("station-coordinates").textContent =
-      `${station.lat.toFixed(2)}° N   ${station.lon.toFixed(2)}° E`;
-    el("station-elevation").textContent = Number.isFinite(station.elevation)
+    el("current-station").textContent = station?.name || "Choose a station";
+    el("station-coordinates").textContent = station
+      ? `${station.lat.toFixed(2)}° N   ${station.lon.toFixed(2)}° E`
+      : "—";
+    el("station-elevation").textContent = Number.isFinite(station?.elevation)
       ? `${station.elevation} m`
       : "—";
     el("current-temperature").textContent = formatNumber(
@@ -521,7 +542,7 @@ export function createApp({
   // Delegation keeps handlers stable when lists and cards are re-rendered.
   function bindStationEvents() {
     el("station-search").addEventListener("focus", () => {
-      if (el("station-search").value === state.station.name)
+      if (state.station && el("station-search").value === state.station.name)
         el("station-search").select();
       setStationMenu(true);
     });
@@ -532,7 +553,9 @@ export function createApp({
       const query = el("station-search").value.trim();
       if (
         normalizeSearchText(query).length < 3 ||
-        normalizeSearchText(query) === normalizeSearchText(state.station.name)
+        (state.station &&
+          normalizeSearchText(query) ===
+            normalizeSearchText(state.station.name))
       )
         return;
       placeSearchTimer = window.setTimeout(() => {
@@ -610,6 +633,7 @@ export function createApp({
       if (!el("station-picker").contains(event.target)) setStationMenu(false);
     });
     el("favorite-toggle").addEventListener("click", () => {
+      if (!state.station) return;
       const saved = state.favorites.includes(state.station.code);
       state.favorites = saved
         ? state.favorites.filter((code) => code !== state.station.code)
@@ -832,7 +856,7 @@ export function createApp({
     Promise.resolve(dashboard.loadStationList()).then(() => {
       if (
         requestedStation &&
-        state.station.code !== requestedStation &&
+        state.station?.code !== requestedStation &&
         state.stationOptions.some(
           (station) => station.code === requestedStation,
         )

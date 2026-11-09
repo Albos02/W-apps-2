@@ -291,6 +291,54 @@ test("station search tolerates typos, requires every term, and Enter selects the
   );
 });
 
+test("a station URL argument takes precedence over the current recent station", async (t) => {
+  const f = fixture(t);
+  f.state.station = f.state.stationOptions.find(
+    (station) => station.code === "PUY",
+  );
+  f.window.location = {
+    href: "https://example.test/dashboard/?station=BER",
+    search: "?station=BER",
+  };
+  f.window.history = { state: null, replaceState() {} };
+  f.dashboard.loadStationData = () => {};
+  f.dashboard.loadStationList = () => {};
+  let selectedCode;
+  f.dashboard.selectStation = (code) => {
+    selectedCode = code;
+  };
+
+  createApp({ ...f, dashboard: f.dashboard }).init();
+  await Promise.resolve();
+
+  assert.equal(selectedCode, "BER");
+});
+
+test("selecting a station from search removes the station URL argument", (t) => {
+  const f = fixture(t);
+  f.window.location = {
+    href: "https://example.test/dashboard/?station=PUY&view=map#history",
+  };
+  let replacedUrl;
+  f.window.history = {
+    state: { source: "test" },
+    replaceState(state, title, url) {
+      assert.deepEqual(state, { source: "test" });
+      assert.equal(title, "");
+      replacedUrl = url;
+    },
+  };
+  f.dashboard.loadStationData = () => {};
+  f.dashboard.loadStationList = () => {};
+  f.dashboard.selectStation = () => {};
+
+  createApp({ ...f, dashboard: f.dashboard }).init();
+  f.el("picker-toggle").click();
+  f.el("station-menu").querySelector('[data-station="BER"]').click();
+
+  assert.equal(replacedUrl, "/dashboard/?view=map#history");
+});
+
 test("Enter selects the first visible station suggestion", (t) => {
   const f = fixture(t);
   f.state.stationOptions = [

@@ -46,12 +46,29 @@ test("parses MeteoSwiss measurements, UTC timestamps and missing fields", () => 
   assert.equal(parseCSV(`${header}\nBER;invalid;4.5;;;;;`).length, 0);
 });
 
-test("starts at Bouveret by default and restores a previously selected station", () => {
-  const firstVisit = app();
+test("uses Bouveret only on the first visit and restores a selected station", () => {
+  const stored = {};
+  const firstVisit = app(undefined, stored);
   assert.equal(firstVisit.state.station.code, "BOU");
+  assert.equal(stored["isobar-visited"], true);
 
-  const returningVisit = app(undefined, { "isobar-station": "PUY" });
+  const returningWithoutSelection = app(undefined, stored);
+  assert.equal(returningWithoutSelection.state.station, null);
+  assert.equal(returningWithoutSelection.state.feedStatus, "Select a station");
+
+  stored["isobar-station"] = "PUY";
+  const returningVisit = app(undefined, stored);
   assert.equal(returningVisit.state.station.code, "PUY");
+});
+
+test("selects the most recent station ahead of the saved station on startup", () => {
+  const { state } = app(undefined, {
+    "isobar-visited": true,
+    "isobar-station": "BER",
+    "isobar-recent-stations": ["PUY", "BER"],
+  });
+
+  assert.equal(state.station.code, "PUY");
 });
 
 test("ignores stale station responses and uses the official endpoint", async () => {
@@ -99,6 +116,49 @@ test("parses the station list format and skips entries without coordinates", asy
   assert.equal(stationOptions[0].code, "PUY");
   assert.equal(stationOptions[0].lat, 46.512308);
   assert.equal(stationOptions[0].elevation, 456);
+});
+
+test("persists and restores a station outside the bundled fallback list", async () => {
+  const stored = { "isobar-visited": true };
+  const fetch = async (url) =>
+    url === "../assets/coord_station_meteosuisse.json"
+      ? {
+          ok: true,
+          json: async () => [["MRP", "46.4", "6.8", "My Station", "VS"]],
+        }
+      : { ok: true, text: async () => csv("MRP", 7.5) };
+  const firstLoad = app(fetch, stored);
+  await firstLoad.loadStationList();
+  await firstLoad.selectStation("MRP");
+  assert.equal(stored["isobar-station"], "MRP");
+
+  const returningLoad = app(fetch, stored);
+  assert.equal(returningLoad.state.station, null);
+  await returningLoad.loadStationList();
+  assert.equal(returningLoad.state.station.code, "MRP");
+  assert.equal(returningLoad.state.current.temp, 7.5);
+});
+
+test("selects a recent station once it appears in the loaded station list", async () => {
+  const stored = {
+    "isobar-visited": true,
+    "isobar-station": "BER",
+    "isobar-recent-stations": ["MRP"],
+  };
+  const fetch = async (url) =>
+    url === "../assets/coord_station_meteosuisse.json"
+      ? {
+          ok: true,
+          json: async () => [["MRP", "46.4", "6.8", "My Station", "VS"]],
+        }
+      : { ok: true, text: async () => csv("MRP", 7.5) };
+  const dashboard = app(fetch, stored);
+
+  assert.equal(dashboard.state.station.code, "BER");
+  await dashboard.loadStationList();
+
+  assert.equal(dashboard.state.station.code, "MRP");
+  assert.equal(dashboard.state.current.temp, 7.5);
 });
 
 test("bundled station asset includes the complete shared station list", () => {

@@ -27,7 +27,7 @@ const preferences = createStorage(windowStorage);
 const weatherClient = createWeatherClient();
 
 let stations = [];
-let selectedCode = preferences.read("isobar-station", "BOU").toUpperCase();
+let selectedCode = preferences.read("isobar-station", "").toUpperCase();
 let leaflet;
 let map;
 let stationLayer;
@@ -184,8 +184,9 @@ async function init() {
   stations = [...fallbackStations];
   selectedCode = stations.some((station) => station.code === preferredCode)
     ? preferredCode
-    : stations[0]?.code;
-  selectStation(selectedCode, { persist: false, panTo: false });
+    : "";
+  if (selectedCode)
+    selectStation(selectedCode, { persist: false, panTo: false });
   renderMarkers(filter.value.trim());
   mapStatusCount.textContent = `${stations.length} stations`;
   if (mapAvailable) fitStationNetwork();
@@ -197,8 +198,9 @@ async function init() {
       ? preferredCode
       : stations.some((station) => station.code === selectedCode)
         ? selectedCode
-        : stations[0]?.code;
-    selectStation(selectedCode, { persist: false, panTo: false });
+        : "";
+    if (selectedCode)
+      selectStation(selectedCode, { persist: false, panTo: false });
     renderMarkers(filter.value.trim());
     if (mapAvailable) fitStationNetwork();
   } catch {

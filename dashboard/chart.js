@@ -116,8 +116,8 @@ export function createChartView(
       .join("");
     state.animateReadings = false;
     el("table-summary").textContent = data.length
-      ? `${data.length} recent chart points · ${state.station.name}`
-      : `No ${group.name.toLowerCase()} readings available for ${state.station.name}`;
+      ? `${data.length} recent chart points · ${state.station?.name || "station"}`
+      : `No ${group.name.toLowerCase()} readings available${state.station ? ` for ${state.station.name}` : ""}`;
     el("data-source").textContent = data.length ? "MeteoSwiss" : "No data yet";
   }
 
@@ -148,7 +148,7 @@ export function createChartView(
     svg.setAttribute("viewBox", `0 0 ${PLOT.width} ${PLOT.height}`);
     svg.setAttribute(
       "aria-label",
-      `${group.name} observations for ${state.station.name}`,
+      `${group.name} observations${state.station ? ` for ${state.station.name}` : ""}`,
     );
     el("chart-caption").textContent = group.name.toUpperCase();
     tooltip.hidden = true;
@@ -287,7 +287,7 @@ export function createChartView(
     link.href = URL.createObjectURL(
       new Blob([csv], { type: "text/csv;charset=utf-8" }),
     );
-    link.download = `${state.station.code.toLowerCase()}-${state.group}-${state.range}.csv`;
+    link.download = `${state.station?.code.toLowerCase() || "observations"}-${state.group}-${state.range}.csv`;
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
   }

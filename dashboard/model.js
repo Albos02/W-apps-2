@@ -50,7 +50,12 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
   const client = createWeatherClient(fetch);
   const geocodeClient = createGeocodeClient(fetch);
   const savedRange = preferences.read("isobar-range", "24h");
-  const savedStation = preferences.read("isobar-station", "BOU");
+  const firstVisit = !preferences.read("isobar-visited", false);
+  const savedStation = preferences.read("isobar-station", "");
+  const recentStations = preferences
+    .read("isobar-recent-stations", [])
+    .map((code) => code.toUpperCase());
+  if (firstVisit) preferences.save("isobar-visited", true);
   const order = preferences.read("isobar-metric-order", []);
   const metricGroups = [...defaultGroups].sort((a, b) => {
     const rank = (id) =>
@@ -66,9 +71,14 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
   );
   if (hiddenGroups.size === metricGroups.length)
     hiddenGroups.delete(metricGroups[0].id);
+  const initialStation =
+    recentStations
+      .map((code) => stations.find((station) => station.code === code))
+      .find(Boolean) ||
+    stations.find((station) => station.code === savedStation) ||
+    (firstVisit ? stations.find((station) => station.code === "BOU") : null);
   const state = {
-    station:
-      stations.find((station) => station.code === savedStation) || stations[0],
+    station: initialStation,
     stationOptions: [...stations],
     placeOptions: [],
     selectedPlace: null,
@@ -86,7 +96,7 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
     acknowledgedObservation: null,
     newReadingAvailable: false,
     isRefreshing: false,
-    feedStatus: "Connecting",
+    feedStatus: initialStation ? "Connecting" : "Select a station",
     chartPoint: -1,
     displayData: [],
     animateReadings: false,
@@ -207,6 +217,12 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
     acknowledge = false,
     forceRefresh = false,
   } = {}) {
+    if (!state.station) {
+      state.feedStatus = "Select a station";
+      state.isRefreshing = false;
+      onChange();
+      return;
+    }
     const id = ++requestId;
     stationController?.abort();
     pollController?.abort();
@@ -269,15 +285,22 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
       if (!options.length) return;
       state.stationOptions = options;
       updateNearbyPlaces();
-      const previousCode = state.station.code;
-      const preferred = preferences.read("isobar-station", previousCode);
+      const previousCode = state.station?.code;
+      const preferred = preferences.read("isobar-station", "");
+      const recent = preferences
+        .read("isobar-recent-stations", [])
+        .map((code) => code.toUpperCase());
       state.station =
+        recent
+          .map((code) => options.find((station) => station.code === code))
+          .find(Boolean) ||
         options.find((station) => station.code === preferred) ||
         options.find((station) => station.code === previousCode) ||
         state.station;
-      if (state.station.code !== previousCode) {
+      if (state.station?.code !== previousCode) {
         state.acknowledgedObservation = null;
-        await loadStationData();
+        if (state.station) await loadStationData();
+        else onChange();
       } else onChange();
     } catch {
       // The bundled station index is optional; the fallback remains available.
@@ -285,7 +308,7 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
   }
 
   async function checkForNewObservation() {
-    if (state.isRefreshing) return;
+    if (state.isRefreshing || !state.station) return;
     pollController?.abort();
     const controller = new AbortController();
     pollController = controller;
@@ -300,7 +323,7 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
         controller.signal.aborted ||
         id !== requestId ||
         state.isRefreshing ||
-        station.code !== state.station.code
+        station.code !== state.station?.code
       )
         return;
       const latest = points.at(-1)?.date;
