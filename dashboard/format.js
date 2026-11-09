@@ -9,6 +9,15 @@ export function esc(value) {
   return String(value).replace(/[&<>"']/g, (char) => entities[char]);
 }
 
+export function normalizeSearchText(value) {
+  return String(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
 export function formatNumber(field, value) {
   if (!Number.isFinite(value)) return "—";
   const digits =

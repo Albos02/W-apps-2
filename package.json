@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "format": "prettier --write dashboard package.json",
-    "format:check": "prettier --check dashboard package.json"
+    "format": "prettier --write dashboard maps package.json",
+    "format:check": "prettier --check dashboard maps package.json"
   },
   "devDependencies": {
     "prettier": "3.6.2"

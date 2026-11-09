@@ -1,11 +1,12 @@
 # Live Weather Data Application
 
-A responsive static dashboard for observations from MeteoSwiss stations.
-Serve the repository root over HTTP and open /dashboard/.
+A responsive static website for observations from MeteoSwiss stations.
+Serve the repository root over HTTP and open /dashboard/ or /maps/.
 
 ## Features
 
 - Search the bundled Swiss station index, with a built-in fallback.
+- Explore all station locations on a searchable map, with a shared station selection.
 - Show current measurements and one-hour trends when a baseline exists.
 - Explore temperature, wind, pressure, dewpoint, humidity, precipitation,
   sunshine, and radiation using native SVG charts.
@@ -24,13 +25,16 @@ Serve the repository root over HTTP and open /dashboard/.
 - dashboard/chart.js: SVG rendering, chart interaction, table, and CSV download.
 - dashboard/config.js: fallback stations, metrics, parameter aliases, time ranges.
 - dashboard/storage.js: validated preference reads and best-effort writes.
+- dashboard/site.js: shared site theme behavior used by the dashboard and map.
 - dashboard/format.js: shared display and CSV formatting.
 - dashboard/style.css: theme tokens, component styles, responsive rules.
+- maps/: searchable station map, reusing dashboard station, storage, theme, and text utilities.
 
 ## Data sources
 
 - Station index: assets/coord_station_meteosuisse.json (158 stations).
 - API base: https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn
+- Map library: Leaflet 1.9.4 from unpkg; base tiles © OpenStreetMap contributors.
 - Current: {base}/{code}/ogd-smn_{code}_t_now.csv
 - Recent: {base}/{code}/ogd-smn_{code}_t_recent.csv
 - Endpoint station codes are lowercase.
@@ -59,7 +63,7 @@ Serve the repository root over HTTP and open /dashboard/.
 
 ## Development
 
-- No build step or runtime JavaScript dependencies.
+- No build step. The dashboard has no runtime JavaScript dependencies; maps loads Leaflet from a CDN and OSM tiles.
 - External web fonts: DM Sans, DM Mono, Manrope (with system fallbacks).
 - Node.js 20+ for development checks: npm ci; npm test; npm run format:check.
 - Full setup, module guide, behavior, and controls: dashboard/README.md.

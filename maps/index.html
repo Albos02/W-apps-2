@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f8f8f8" />
+    <meta
+      name="description"
+      content="Explore the locations of MeteoSwiss weather stations across Switzerland."
+    />
+    <title>W-Apps — Station map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../dashboard/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="../dashboard/" aria-label="W-Apps home">
+          <span class="brand-mark" aria-hidden="true"
+            ><i></i><i></i><i></i
+          ></span>
+          <span>W-Apps</span>
+        </a>
+        <nav class="top-nav" aria-label="Main navigation">
+          <a class="nav-link" href="../dashboard/">Overview</a>
+          <a class="nav-link active" href="./" aria-current="page">Maps</a>
+          <a class="nav-link" href="../dashboard/#history"
+            >Archive <span class="nav-arrow">↗</span></a
+          >
+          <a class="nav-link" href="../dashboard/#about">About</a>
+        </nav>
+        <div class="top-actions">
+          <span class="live-status"
+            ><span class="live-dot"></span
+            ><span id="map-status-count">Loading stations</span></span
+          >
+          <button
+            class="icon-button theme-toggle"
+            id="theme-toggle"
+            type="button"
+            aria-label="Switch to dark theme"
+            title="Toggle theme"
+          >
+            <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.5" />
+              <path
+                d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
+              />
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M20.1 15.4A8.5 8.5 0 0 1 8.6 3.9 8.6 8.6 0 1 0 20.1 15.4Z"
+              />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="intro map-intro">
+          <div class="intro-copy">
+            <p class="eyebrow">
+              <span class="eyebrow-line"></span> SWITZERLAND · STATION NETWORK
+            </p>
+            <h1>Every station, <span>on the map.</span></h1>
+            <p class="intro-description">
+              Explore station locations across Switzerland. Select a marker for
+              details.
+            </p>
+          </div>
+          <a class="map-back-link" href="../dashboard/"
+            >← Back to live weather</a
+          >
+        </section>
+
+        <section class="map-layout" aria-label="MeteoSwiss station map">
+          <article class="map-card">
+            <div class="map-card-heading">
+              <div>
+                <p class="chart-caption">METEOSWISS STATIONS</p>
+                <h2>Across Switzerland<span class="heading-period">.</span></h2>
+              </div>
+              <span class="map-count" id="map-count">Loading stations…</span>
+            </div>
+            <div class="map-canvas" id="map-canvas">
+              <div
+                class="station-map"
+                id="station-map"
+                role="region"
+                aria-label="Map of MeteoSwiss weather stations across Switzerland"
+                tabindex="0"
+              ></div>
+              <div class="map-legend">
+                <span class="legend-dot"></span> MeteoSwiss station
+              </div>
+              <p
+                class="map-load-error"
+                id="map-load-error"
+                role="status"
+                hidden
+              >
+                Map tiles could not be loaded. Check your connection and reload.
+              </p>
+            </div>
+            <div class="map-attribution">
+              Station locations: MeteoSwiss · Map tiles © OpenStreetMap
+              contributors
+            </div>
+          </article>
+
+          <aside class="station-panel" aria-label="Station directory">
+            <div class="station-panel-heading">
+              <div>
+                <p class="chart-caption">FIND A PLACE</p>
+                <h2>Station list</h2>
+              </div>
+              <span class="station-total" id="station-total">—</span>
+            </div>
+            <label class="map-search-wrap" for="station-filter">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="m16 16 4 4" />
+              </svg>
+              <input
+                id="station-filter"
+                type="search"
+                placeholder="Search name, code, canton"
+                autocomplete="off"
+              />
+            </label>
+            <p class="station-hint" id="station-hint" aria-live="polite">
+              Loading station index…
+            </p>
+            <div
+              class="station-list"
+              id="station-list"
+              role="listbox"
+              aria-label="Weather stations"
+            ></div>
+            <div
+              class="selected-station"
+              id="selected-station"
+              aria-live="polite"
+            >
+              <span class="selected-kicker">SELECTED STATION</span>
+              <strong id="selected-name">Choose a marker</strong>
+              <span class="selected-location" id="selected-location"
+                >Station details will appear here</span
+              >
+              <a id="station-dashboard-link" href="../dashboard/"
+                >View live conditions <span aria-hidden="true">↗</span></a
+              >
+            </div>
+          </aside>
+        </section>
+      </main>
+
+      <footer class="footer" id="about">
+        <a class="brand footer-brand" href="../dashboard/">
+          <span class="brand-mark" aria-hidden="true"
+            ><i></i><i></i><i></i></span
+          ><span>W-Apps</span>
+        </a>
+        <span>Weather data, made a little more human.</span>
+        <span class="footer-right"
+          >Built with open data <span>✳</span> Switzerland</span
+        >
+      </footer>
+    </div>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

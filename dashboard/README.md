@@ -1,6 +1,6 @@
 # W-Apps — Swiss weather
 
-A static MeteoSwiss station dashboard built with native JavaScript modules, HTML, CSS, and SVG charts. No build step or runtime JavaScript dependencies are required. The bundled station index lives in `assets/coord_station_meteosuisse.json`; a small built-in index is available if that file cannot be loaded.
+A static MeteoSwiss weather website built with native JavaScript modules and HTML/CSS. The dashboard needs no build step or runtime JavaScript dependencies; the interactive map loads Leaflet from its CDN and OpenStreetMap tiles. The bundled station index lives in `assets/coord_station_meteosuisse.json`; the dashboard and map share its built-in fallback station list.
 
 For example, from the repository root:
 
@@ -8,7 +8,7 @@ For example, from the repository root:
 python3 -m http.server 8000
 ```
 
-Then visit `http://localhost:8000/dashboard/`.
+Then visit `http://localhost:8000/dashboard/` for live conditions or `http://localhost:8000/maps/` to explore the station network.
 
 ## Development
 
@@ -20,7 +20,7 @@ npm test
 npm run format:check
 ```
 
-Run `npm run format` to format the dashboard. Tests use Node's built-in test runner, injected fetch/storage implementations, and a lightweight DOM stub against the dashboard HTML, so they do not need a browser or a network connection. DOM coverage includes chart empty/data transitions, linked table highlighting, CSV downloads, and config-driven metric tiles.
+Run `npm run format` to format the website. Tests use Node's built-in test runner, injected fetch/storage implementations, and a lightweight DOM stub against the dashboard HTML, so they do not need a browser or a network connection. DOM coverage includes chart empty/data transitions, linked table highlighting, CSV downloads, and config-driven metric tiles.
 
 ## Structure
 
@@ -33,8 +33,11 @@ Run `npm run format` to format the dashboard. Tests use Node's built-in test run
 | `chart.js`   | SVG chart, tooltip, linked readings table, and CSV download                        |
 | `config.js`  | Metric definitions, API parameter aliases, ranges, and fallback stations           |
 | `storage.js` | Validated preference reads and best-effort writes                                  |
-| `format.js`  | Escaping, measurement formatting, compass labels, and CSV serialization            |
+| `site.js`    | Shared theme toggle and persistence for website pages                              |
+| `format.js`  | Escaping, search normalization, measurement formatting, and CSV serialization      |
 | `style.css`  | Theme tokens, component styles, and consolidated responsive layouts                |
+
+The `/maps/` page shares the dashboard's station index loader and fallback list, normalized station records, theme controls, search normalization, HTML escaping, and browser preferences. Its selected station and light/dark theme are the same saved preferences used by the dashboard.
 
 ## Data behavior
 

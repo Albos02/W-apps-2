@@ -1,7 +1,14 @@
 import { RANGE_PRESETS, OBSERVATION_POLL_INTERVAL } from "./config.js";
 import { createDashboard } from "./model.js";
 import { createChartView } from "./chart.js";
-import { esc, formatNumber, formatValue, directionText } from "./format.js";
+import {
+  esc,
+  formatNumber,
+  formatValue,
+  directionText,
+  normalizeSearchText,
+} from "./format.js";
+import { bindThemeToggle } from "./site.js";
 
 export function createApp({
   document = globalThis.document,
@@ -56,15 +63,6 @@ export function createApp({
     renderStationMenu();
     renderCurrent();
     renderChart();
-  }
-
-  function normalizeSearchText(value) {
-    return value
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase()
-      .replace(/[^\p{L}\p{N}]+/gu, " ")
-      .trim();
   }
 
   function editDistanceAtMostOne(left, right) {
@@ -520,15 +518,6 @@ export function createApp({
       `THE LAST ${RANGE_PRESETS[state.range].heading}`;
   }
 
-  function setTheme(theme) {
-    const dark = theme === "dark";
-    document.documentElement.dataset.theme = dark ? "dark" : "light";
-    el("theme-toggle").setAttribute(
-      "aria-label",
-      dark ? "Switch to light theme" : "Switch to dark theme",
-    );
-  }
-
   // Delegation keeps handlers stable when lists and cards are re-rendered.
   function bindStationEvents() {
     el("station-search").addEventListener("focus", () => {
@@ -764,12 +753,6 @@ export function createApp({
       reorderMetrics,
       true,
     );
-    el("theme-toggle").addEventListener("click", () => {
-      const theme =
-        document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-      setTheme(theme);
-      preferences.save("isobar-theme", theme);
-    });
     document.querySelectorAll(".range-tab").forEach((button) =>
       button.addEventListener("click", () => {
         state.range = button.dataset.range;
@@ -831,7 +814,11 @@ export function createApp({
   }
 
   function init() {
-    setTheme(preferences.read("isobar-theme", "light"));
+    bindThemeToggle({
+      document,
+      button: el("theme-toggle"),
+      preferences,
+    });
     renderConditionMetrics();
     renderCustomizer();
     renderRange();
@@ -839,7 +826,19 @@ export function createApp({
     bindEvents();
     setupSpotlight();
     loadStationData();
-    dashboard.loadStationList();
+    const requestedStation = new URLSearchParams(window.location?.search || "")
+      .get("station")
+      ?.toUpperCase();
+    Promise.resolve(dashboard.loadStationList()).then(() => {
+      if (
+        requestedStation &&
+        state.station.code !== requestedStation &&
+        state.stationOptions.some(
+          (station) => station.code === requestedStation,
+        )
+      )
+        dashboard.selectStation(requestedStation);
+    });
     window.requestAnimationFrame(() => {
       el("station-search").focus({ preventScroll: true });
       el("station-search").select();
