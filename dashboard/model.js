@@ -240,9 +240,15 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
       feedStatus: "Connecting",
     });
     onChange();
+    const needsHistory = RANGE_PRESETS[state.range].hours > 12;
     const results = await Promise.allSettled([
       client.fetchCSV(station, "now", { signal: controller.signal }),
-      client.fetchCSV(station, "recent", { signal: controller.signal }),
+      needsHistory
+        ? client.fetchCSV(station, "recent", {
+            signal: controller.signal,
+            range: state.range,
+          })
+        : Promise.resolve([]),
     ]);
     if (id !== requestId) return;
     const [currentPoints, historyPoints] = results.map((result) =>
@@ -259,7 +265,7 @@ export function createDashboard({ fetch, storage, onChange = () => {} } = {}) {
         state.latestObservation > state.acknowledgedObservation;
     }
     state.feedStatus =
-      currentPoints.length && historyPoints.length
+      currentPoints.length && (historyPoints.length || !needsHistory)
         ? "Live data"
         : latest
           ? "Partial data"

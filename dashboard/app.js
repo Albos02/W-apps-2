@@ -782,8 +782,7 @@ export function createApp({
         state.range = button.dataset.range;
         state.chartPoint = -1;
         preferences.save("isobar-range", state.range);
-        renderRange();
-        renderChart();
+        loadStationData();
       }),
     );
     el("download-csv").addEventListener("click", exportCSV);

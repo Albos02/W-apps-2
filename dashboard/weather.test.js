@@ -129,6 +129,44 @@ test("feed cache expires after ten minutes and polling leaves it intact", async 
   assert.equal(requests, 4);
 });
 
+test("recent history uses a byte-range tail with the CSV header", async () => {
+  const requests = [];
+  const now = Date.UTC(2026, 10, 8, 12);
+  const header = "station_abbr;reference_timestamp;tre200s0\n";
+  const older = new Date(now - 25 * 60 * 60 * 1000).toISOString();
+  const recent = new Date(now - 60 * 60 * 1000).toISOString();
+  const client = createWeatherClient(
+    async (_url, options) => {
+      requests.push(options);
+      if (requests.length === 1) {
+        return {
+          ok: true,
+          status: 206,
+          headers: { get: () => "bytes 0-40/100000" },
+          text: async () => header,
+        };
+      }
+      const [, start] = options.headers.Range.match(/bytes=(\d+)-/);
+      return {
+        ok: true,
+        status: 206,
+        headers: { get: () => `bytes ${start}-99999/100000` },
+        text: async () => `partial-row\nBER;${older};4.5\nBER;${recent};4.7\n`,
+      };
+    },
+    () => now,
+  );
+
+  const points = await client.fetchCSV(stations[0], "recent", { range: "24h" });
+
+  assert.deepEqual(
+    points.map((point) => point.date.toISOString()),
+    [older, recent],
+  );
+  assert.equal(requests[0].headers.Range, "bytes=0-4095");
+  assert.match(requests[1].headers.Range, /^bytes=\d+-99999$/);
+});
+
 test("empty and failed feed responses are retried instead of cached", async () => {
   let requests = 0;
   const client = createWeatherClient(async () => {

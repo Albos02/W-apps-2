@@ -7,6 +7,9 @@ import {
 import { formatNumber } from "./format.js";
 
 const HOUR = 60 * 60 * 1000;
+const CSV_HEADER_RANGE = 4095;
+const CSV_BYTES_PER_OBSERVATION = 112;
+const MAX_CSV_RANGE_BYTES = 16 * 1024 * 1024;
 const isValidDate = (date) =>
   date instanceof Date && Number.isFinite(date.getTime());
 
@@ -314,6 +317,22 @@ export function nearestStations(stationList, place, limit = 5) {
     .slice(0, Math.max(0, limit));
 }
 
+function responseHeader(response, name) {
+  return response.headers?.get?.(name) || "";
+}
+
+function firstCSVLine(text) {
+  const lineEnd = text.search(/\r?\n/);
+  return lineEnd < 0 ? "" : text.slice(0, lineEnd + 1);
+}
+
+function withoutFirstCSVLine(text) {
+  const lineEnd = text.search(/\r?\n/);
+  return lineEnd < 0
+    ? ""
+    : text.slice(lineEnd + (text[lineEnd] === "\r" ? 2 : 1));
+}
+
 export function createWeatherClient(fetch = globalThis.fetch, now = Date.now) {
   const cache = new Map();
   const cacheVersions = new Map();
@@ -321,22 +340,79 @@ export function createWeatherClient(fetch = globalThis.fetch, now = Date.now) {
   async function fetchCSV(
     station,
     suffix,
-    { bypassCache = false, signal } = {},
+    { bypassCache = false, signal, range = "24h" } = {},
   ) {
     signal?.throwIfAborted();
-    const key = `${station.code}:${suffix}`;
+    const key = `${station.code}:${suffix}${suffix === "recent" ? `:${range}` : ""}`;
     const version = cacheVersions.get(station.code) || 0;
     const cached = cache.get(key);
     if (!bypassCache && cached?.expiresAt > now()) return cached.points;
     if (!bypassCache) cache.delete(key);
     const code = station.code.toLowerCase();
-    const response = await fetch(
-      `https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/${code}/ogd-smn_${code}_t_${suffix}.csv`,
-      { cache: "no-store", mode: "cors", signal },
-    );
-    if (!response.ok)
-      throw new Error(`Weather data request failed (${response.status})`);
-    const points = parseCSV(await response.text());
+    const url = `https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/${code}/ogd-smn_${code}_t_${suffix}.csv`;
+    const request = (byteRange) =>
+      fetch(url, {
+        headers: { Range: byteRange },
+        mode: "cors",
+        signal,
+      });
+    const checkedText = async (response) => {
+      if (!response.ok)
+        throw new Error(`Weather data request failed (${response.status})`);
+      return response.text();
+    };
+    let points;
+    if (suffix !== "recent" || !Object.hasOwn(RANGE_PRESETS, range)) {
+      const response = await fetch(url, { mode: "cors", signal });
+      points = parseCSV(await checkedText(response));
+    } else {
+      const headerResponse = await request(`bytes=0-${CSV_HEADER_RANGE}`);
+      const headerText = await checkedText(headerResponse);
+      if (headerResponse.status !== 206) {
+        points = parseCSV(headerText);
+      } else {
+        const header = firstCSVLine(headerText);
+        if (!header) {
+          points = parseCSV(headerText);
+        } else {
+          const cutoff = now() - RANGE_PRESETS[range].hours * HOUR;
+          let byteCount = Math.ceil(
+            RANGE_PRESETS[range].hours * 6 * CSV_BYTES_PER_OBSERVATION * 1.5,
+          );
+          points = [];
+          while (byteCount <= MAX_CSV_RANGE_BYTES) {
+            signal?.throwIfAborted();
+            const totalBytes = Number(
+              responseHeader(headerResponse, "content-range").match(
+                /\/(\d+)$/,
+              )?.[1],
+            );
+            const tailRange = Number.isFinite(totalBytes)
+              ? `bytes=${Math.max(0, totalBytes - byteCount - 1)}-${totalBytes - 1}`
+              : `bytes=-${byteCount}`;
+            const tailResponse = await request(tailRange);
+            const tailText = await checkedText(tailResponse);
+            if (tailResponse.status !== 206) {
+              points = parseCSV(tailText);
+              break;
+            }
+            const contentRange = responseHeader(tailResponse, "content-range");
+            const startsAtBeginning = /^bytes\s+0-/i.test(contentRange);
+            const csvText = startsAtBeginning
+              ? tailText
+              : `${header}${withoutFirstCSVLine(tailText)}`;
+            points = parseCSV(csvText);
+            if (
+              startsAtBeginning ||
+              points.some((point) => point.date.getTime() <= cutoff)
+            )
+              break;
+            if (byteCount === MAX_CSV_RANGE_BYTES) break;
+            byteCount = Math.min(byteCount * 2, MAX_CSV_RANGE_BYTES);
+          }
+        }
+      }
+    }
     signal?.throwIfAborted();
     if (
       !bypassCache &&

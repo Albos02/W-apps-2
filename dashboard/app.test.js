@@ -201,6 +201,26 @@ test("merges both feeds and keeps the rolling 24 hours across midnight", async (
   );
 });
 
+test("uses the current feed alone for ranges up to 12 hours", async () => {
+  const requested = [];
+  const { loadStationData, state } = app(
+    async (url) => {
+      requested.push(url);
+      return {
+        ok: true,
+        text: async () => csvAt("PUY", "02.01.2026 00:10", 4.5),
+      };
+    },
+    { "isobar-range": "12h" },
+  );
+
+  await loadStationData();
+
+  assert.equal(requested.length, 1);
+  assert.ok(requested[0].endsWith("_t_now.csv"));
+  assert.equal(state.feedStatus, "Live data");
+});
+
 test("averages 7-day observations in threes and 30-day observations in 2-hour blocks", () => {
   const group = { fields: [{ key: "temp" }, { key: "direction" }] };
   const data = Array.from({ length: 24 }, (_, index) => ({
