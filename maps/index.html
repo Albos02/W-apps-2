@@ -97,8 +97,8 @@
             </p>
             <h1>Every station, <span>on the map.</span></h1>
             <p class="intro-description">
-              Explore station locations across Switzerland. Select a marker for
-              details.
+              Wind arrows show the current direction and force at each
+              MeteoSwiss station. Select a marker for details.
             </p>
           </div>
           <a class="map-back-link" href="../dashboard/"
@@ -124,7 +124,9 @@
                 tabindex="0"
               ></div>
               <div class="map-legend">
-                <span class="legend-dot"></span> MeteoSwiss station
+                <span class="legend-arrow" aria-hidden="true">↑</span>
+                <span class="legend-copy">Wind direction &amp; force</span>
+                <span class="legend-scale" aria-hidden="true"></span>
               </div>
               <p
                 class="map-load-error"

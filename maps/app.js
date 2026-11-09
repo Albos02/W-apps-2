@@ -1,7 +1,7 @@
 import { createStorage } from "../storage.js";
 import { createWeatherClient } from "../weather.js";
 import { stations as fallbackStations } from "../config.js";
-import { esc, normalizeSearchText } from "../format.js";
+import { directionText, esc, normalizeSearchText } from "../format.js";
 import { bindThemeToggle } from "../site.js";
 
 const mapElement = document.getElementById("station-map");
@@ -33,6 +33,12 @@ let map;
 let stationLayer;
 let stationMarkers = new Map();
 let loadedMapTile = false;
+let windByCode = new Map();
+let windLoading = false;
+let stationFeedOffline = false;
+
+const WIND_FETCH_CONCURRENCY = 6;
+const WIND_SCALE_MAX = 70;
 
 function matches(station, query) {
   if (!query) return true;
@@ -42,16 +48,71 @@ function matches(station, query) {
   );
 }
 
-function stationIcon(isSelected) {
+function windColor(speed) {
+  if (!Number.isFinite(speed)) return "#1689e0";
+  if (speed < 5) return "#8b98a0";
+  if (speed < 15) return "#4a9fd4";
+  if (speed < 30) return "#2f9e72";
+  if (speed < 50) return "#d9a22e";
+  return "#d9534f";
+}
+
+function windArrowSize(speed) {
+  const clamped = Math.max(0, Math.min(speed, WIND_SCALE_MAX));
+  return Math.round(18 + (clamped / WIND_SCALE_MAX) * 18);
+}
+
+function windSummary(data) {
+  if (!data || !Number.isFinite(data.wind)) return "";
+  const gust = Number.isFinite(data.gust)
+    ? ` (gusts ${data.gust.toFixed(1)})`
+    : "";
+  return `${data.wind.toFixed(1)} km/h · ${directionText(data.direction)}${gust}`;
+}
+
+function stationTooltip(station) {
+  const wind = windByCode.get(station.code);
+  const summary = windSummary(wind);
+  return `<strong>${esc(station.name)}</strong><br>${esc(station.canton)} · ${esc(station.code)}${summary ? `<br>${esc(summary)}` : ""}`;
+}
+
+function stationPopup(station) {
+  const wind = windByCode.get(station.code);
+  const summary = windSummary(wind);
+  return `<strong>${esc(station.name)}</strong><br>${esc(station.canton)} · ${station.lat.toFixed(3)}° N, ${station.lon.toFixed(3)}° E${summary ? `<br>Wind ${esc(summary)}` : ""}<br><a href="../dashboard/?station=${encodeURIComponent(station.code)}">View live conditions ↗</a>`;
+}
+
+function stationIcon(station, isSelected) {
+  const wind = windByCode.get(station.code);
+  const speed = wind?.wind;
+  const direction = wind?.direction;
   const classes = ["station-div-icon", isSelected ? "selected" : ""]
     .filter(Boolean)
     .join(" ");
+
+  if (!Number.isFinite(speed) || !Number.isFinite(direction)) {
+    return leaflet.divIcon({
+      className: classes,
+      html: '<span class="station-pin" aria-hidden="true"></span>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      tooltipAnchor: [0, -10],
+    });
+  }
+
+  // MeteoSwiss reports the direction the wind blows *from*, so point the
+  // arrow the opposite way (toward where it is heading).
+  const rotation = direction + 180;
+  const size = windArrowSize(speed);
+  const arrowClasses = ["wind-div-icon", isSelected ? "selected" : ""]
+    .filter(Boolean)
+    .join(" ");
   return leaflet.divIcon({
-    className: classes,
-    html: '<span class="station-pin" aria-hidden="true"></span>',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    tooltipAnchor: [0, -10],
+    className: arrowClasses,
+    html: `<span class="wind-marker" style="width:${size}px;height:${size}px;color:${windColor(speed)}"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${rotation}deg)"><path d="M12 20V4"/><path d="M5.5 10.5 12 4l6.5 6.5"/></svg></span>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    tooltipAnchor: [0, -size / 2],
   });
 }
 
@@ -63,21 +124,65 @@ function renderMarkers(query) {
   for (const station of stations) {
     if (!matches(station, query)) continue;
     const marker = leaflet.marker([station.lat, station.lon], {
-      icon: stationIcon(station.code === selectedCode),
+      icon: stationIcon(station, station.code === selectedCode),
       title: `${station.name} · ${station.canton}`,
       alt: `MeteoSwiss weather station ${station.name}`,
       keyboard: true,
     });
-    marker.bindTooltip(
-      `<strong>${esc(station.name)}</strong><br>${esc(station.canton)} · ${esc(station.code)}`,
-    );
-    marker.bindPopup(
-      `<strong>${esc(station.name)}</strong><br>${esc(station.canton)} · ${station.lat.toFixed(3)}° N, ${station.lon.toFixed(3)}° E<br><a href="../dashboard/?station=${encodeURIComponent(station.code)}">View live conditions ↗</a>`,
-    );
+    marker.bindTooltip(() => stationTooltip(station));
+    marker.bindPopup(() => stationPopup(station));
     marker.on("click", () => selectStation(station.code, { panTo: false }));
     marker.addTo(stationLayer);
     stationMarkers.set(station.code, marker);
   }
+}
+
+async function loadWindData() {
+  if (windLoading || !stations.length) return;
+  windLoading = true;
+  const targets = [...stations];
+  let completed = 0;
+  const pending = targets[Symbol.iterator]();
+  mapStatusCount.textContent = `Loading wind 0/${targets.length}`;
+
+  const worker = async () => {
+    for (;;) {
+      const next = pending.next();
+      if (next.done) return;
+      const station = next.value;
+      try {
+        const points = await weatherClient.fetchCSV(station, "now");
+        const latest = points.at(-1);
+        const values = latest?.values || {};
+        if (Number.isFinite(values.wind) && Number.isFinite(values.direction)) {
+          windByCode.set(station.code, {
+            wind: values.wind,
+            gust: Number.isFinite(values.gust) ? values.gust : null,
+            direction: values.direction,
+            timestamp: latest.date,
+          });
+          const marker = stationMarkers.get(station.code);
+          if (marker)
+            marker.setIcon(stationIcon(station, station.code === selectedCode));
+        }
+      } catch {
+        // A station without a usable now feed simply keeps its station dot.
+      }
+      completed++;
+      mapStatusCount.textContent = `Loading wind ${completed}/${targets.length}`;
+    }
+  };
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(WIND_FETCH_CONCURRENCY, targets.length) },
+      worker,
+    ),
+  );
+
+  windLoading = false;
+  mapStatusCount.textContent = `${stations.length} stations · wind${stationFeedOffline ? " · offline" : ""}`;
+  renderMarkers(filter.value.trim());
 }
 
 function renderList(query) {
@@ -123,8 +228,11 @@ function selectStation(code, { persist = true, panTo = true } = {}) {
   selectedName.textContent = station.name;
   selectedLocation.textContent = `${station.canton} · ${station.lat.toFixed(3)}° N, ${station.lon.toFixed(3)}° E${Number.isFinite(station.elevation) ? ` · ${station.elevation} m` : ""} · ${station.code}`;
   dashboardLink.href = `../dashboard/?station=${encodeURIComponent(station.code)}`;
-  for (const [markerCode, marker] of stationMarkers)
-    marker.setIcon(stationIcon(markerCode === selectedCode));
+  for (const [markerCode, marker] of stationMarkers) {
+    const markerStation = stations.find((item) => item.code === markerCode);
+    if (markerStation)
+      marker.setIcon(stationIcon(markerStation, markerCode === selectedCode));
+  }
   renderList(filter.value.trim());
 
   if (map && panTo) {
@@ -218,8 +326,11 @@ async function init() {
     renderMarkers(filter.value.trim());
     if (mapAvailable) fitStationNetwork();
   } catch {
+    stationFeedOffline = true;
     mapStatusCount.textContent = `${stations.length} stations · offline`;
   }
+
+  if (mapAvailable) loadWindData();
 }
 
 filter.addEventListener("input", () => {
