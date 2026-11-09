@@ -64,7 +64,7 @@ function splitCSVRow(line, separator) {
   return cells;
 }
 
-export function parseCSV(text) {
+export function parseCSV(text, { cutoff = null } = {}) {
   const lines = text
     .replace(/^\uFEFF/, "")
     .split(/\r?\n/)
@@ -81,22 +81,36 @@ export function parseCSV(text) {
     key,
     header.findIndex((name) => name === alias || name.includes(alias)),
   ]);
+  const cutoffTime = cutoff instanceof Date ? cutoff.getTime() : Number(cutoff);
+  const hasCutoff = cutoff != null && Number.isFinite(cutoffTime);
+  const points = [];
 
-  return lines
-    .slice(1)
-    .flatMap((line) => {
-      const cells = splitCSVRow(line, separator);
-      const date = parseDate(cells[timeColumn >= 0 ? timeColumn : 0]);
-      if (!date) return [];
-      const values = {};
-      for (const [key, index] of columns) {
-        if (index < 0 || !cells[index]) continue;
-        const number = Number(cells[index].replace(",", "."));
-        if (Number.isFinite(number)) values[key] = number;
-      }
-      return Object.keys(values).length ? [{ date, values }] : [];
-    })
-    .sort((a, b) => a.date - b.date);
+  // The MeteoSwiss feed is chronological. Walking a tail response backwards
+  // lets us stop as soon as it reaches the requested range instead of parsing
+  // values from the older rows in that response.
+  for (
+    let index = hasCutoff ? lines.length - 1 : 1;
+    hasCutoff ? index > 0 : index < lines.length;
+    index += hasCutoff ? -1 : 1
+  ) {
+    const cells = splitCSVRow(lines[index], separator);
+    const date = parseDate(cells[timeColumn >= 0 ? timeColumn : 0]);
+    if (!date) continue;
+
+    const isBeforeCutoff = hasCutoff && date.getTime() < cutoffTime;
+    const values = {};
+    for (const [key, columnIndex] of columns) {
+      if (columnIndex < 0 || !cells[columnIndex]) continue;
+      const number = Number(cells[columnIndex].replace(",", "."));
+      if (Number.isFinite(number)) values[key] = number;
+    }
+    if (Object.keys(values).length || isBeforeCutoff)
+      points.push({ date, values });
+    if (isBeforeCutoff) break;
+  }
+
+  if (hasCutoff) points.reverse();
+  return points;
 }
 
 export function mergeObservations(...feeds) {
@@ -401,7 +415,7 @@ export function createWeatherClient(fetch = globalThis.fetch, now = Date.now) {
             const csvText = startsAtBeginning
               ? tailText
               : `${header}${withoutFirstCSVLine(tailText)}`;
-            points = parseCSV(csvText);
+            points = parseCSV(csvText, { cutoff: new Date(cutoff) });
             if (
               startsAtBeginning ||
               points.some((point) => point.date.getTime() <= cutoff)

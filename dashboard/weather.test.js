@@ -24,6 +24,29 @@ test("parses quoted CSV cells, decimal commas, zeroes, and byte-order marks", ()
   assert.equal(point.date.toISOString(), "2026-11-08T10:00:00.000Z");
 });
 
+test("recent CSV parsing stops at the cutoff and keeps chronological order", () => {
+  const csv = [
+    "reference_timestamp;tre200s0",
+    "202611071000;1",
+    "202611081000;2",
+    "202611081100;3",
+    "202611081200;4",
+  ].join("\n");
+
+  const points = parseCSV(csv, {
+    cutoff: new Date("2026-11-08T10:30:00Z"),
+  });
+
+  assert.deepEqual(
+    points.map(({ date }) => date.toISOString()),
+    [
+      "2026-11-08T10:00:00.000Z",
+      "2026-11-08T11:00:00.000Z",
+      "2026-11-08T12:00:00.000Z",
+    ],
+  );
+});
+
 test("compact timestamps use UTC, preserve seconds, and reject invalid dates", () => {
   assert.equal(
     parseDate("20261108123456").toISOString(),
