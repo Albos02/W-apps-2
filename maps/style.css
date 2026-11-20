@@ -316,6 +316,7 @@ main {
 .station-option {
   display: flex;
   width: 100%;
+  flex: 0 0 auto;
   align-items: center;
   gap: 10px;
   padding: 9px 8px;

@@ -194,7 +194,7 @@ function renderList(query) {
           Number(left.code === selectedCode) ||
         left.name.localeCompare(right.name),
     );
-  const display = query ? filtered : filtered.slice(0, 9);
+  const display = filtered;
   list.innerHTML = display.length
     ? display
         .map(
@@ -205,7 +205,7 @@ function renderList(query) {
     : '<p class="station-empty">No stations match that search.</p>';
   stationHint.textContent = query
     ? `${filtered.length} ${filtered.length === 1 ? "station" : "stations"} matching “${query}”`
-    : `Showing 9 of ${stations.length} stations · search to explore all`;
+    : `Showing all ${stations.length} stations · search to filter`;
   stationTotal.textContent = query
     ? `${filtered.length} / ${stations.length}`
     : `${stations.length} total`;
