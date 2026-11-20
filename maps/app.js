@@ -59,7 +59,7 @@ function windColor(speed) {
 
 function windArrowSize(speed) {
   const clamped = Math.max(0, Math.min(speed, WIND_SCALE_MAX));
-  return Math.round(18 + (clamped / WIND_SCALE_MAX) * 18);
+  return Math.round(22 + (clamped / WIND_SCALE_MAX) * 18);
 }
 
 function windSummary(data) {
@@ -109,7 +109,7 @@ function stationIcon(station, isSelected) {
     .join(" ");
   return leaflet.divIcon({
     className: arrowClasses,
-    html: `<span class="wind-marker" style="width:${size}px;height:${size}px;color:${windColor(speed)}"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${rotation}deg)"><path d="M12 20V4"/><path d="M5.5 10.5 12 4l6.5 6.5"/></svg></span>`,
+    html: `<span class="wind-marker" style="width:${size}px;height:${size}px;color:${windColor(speed)}"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${rotation}deg)"><path d="M12 1.5 3.5 12h5.25v10.5h6.5V12h5.25z"/></svg></span>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     tooltipAnchor: [0, -size / 2],
